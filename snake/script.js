@@ -6,9 +6,10 @@ const tileCount = canvas.width / gridSize;
 
 let snake = [{ x: 10, y: 10 }];
 let food = { x: 5, y: 5 };
-let dx = gridSize;
-let dy = 0;
+let dx = 0; // Initial direction set to 0
+let dy = 0; // Initial direction set to 0
 let score = 0;
+let gameOver = false;
 
 function drawTile(x, y, color) {
     ctx.fillStyle = color;
@@ -53,8 +54,10 @@ function checkCollision() {
 }
 
 function gameLoop() {
+    if (gameOver) return;
     if (checkCollision()) {
-        alert('Game Over');
+        gameOver = true;
+        alert('Game Over. Press OK to play again.');
         document.location.reload();
     } else {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
