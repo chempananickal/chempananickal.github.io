@@ -25,22 +25,24 @@
     <script>
         let count = 0;
         const button = document.getElementById('button');
-        const body = document.body;
         const messages = [
-            "Why did the scarecrow become a successful neurosurgeon? He was outstanding in his field!",
-            "Why don't skeletons fight each other? They don't have the guts.",
-            "What do you call fake spaghetti? An impasta!",
-            "Why did the math book look sad? Because it had too many problems."
+            "Please, stop pressing me!",
+            "I beg you, no more!",
+            "Why are you doing this to me?",
+            "I'm getting tired, please stop.",
+            "You're really testing my patience!",
+            "Seriously, stop it!",
+            "I'm warning you, don't press me again!",
+            "Can you please not press me?",
+            "I'm begging you, leave me alone!",
+            "You're really annoying, stop pressing me!"
         ];
 
-        const colors = ["#FF5733", "#33FF57", "#3357FF", "#F333FF"];
         const sounds = [
             new Audio('https://www.soundjay.com/button/sounds/button-16.mp3'),
-            new Audio('https://www.soundjay.com/button/sounds/button-09.mp3')
-        ];
-        const gifs = [
-            "https://media.giphy.com/media/3o7aD4Xv6Zg5NQn8GY/giphy.gif",
-            "https://media.giphy.com/media/l0HlNQ03J5JxX6lva/giphy.gif"
+            new Audio('https://www.soundjay.com/button/sounds/button-09.mp3'),
+            new Audio('https://www.soundjay.com/button/sounds/button-10.mp3'),
+            new Audio('https://www.soundjay.com/button/sounds/button-7.mp3')
         ];
 
         function getRandomItem(array) {
@@ -49,34 +51,8 @@
 
         button.addEventListener('click', () => {
             count++;
-            button.textContent = `Pressed ${count} times`;
-
-            // Randomly choose an event
-            const randomEvent = Math.floor(Math.random() * 4);
-
-            switch (randomEvent) {
-                case 0:
-                    alert(getRandomItem(messages));
-                    break;
-                case 1:
-                    body.style.backgroundColor = getRandomItem(colors);
-                    break;
-                case 2:
-                    getRandomItem(sounds).play();
-                    break;
-                case 3:
-                    const img = document.createElement('img');
-                    img.src = getRandomItem(gifs);
-                    img.style.maxWidth = '200px';
-                    img.style.position = 'absolute';
-                    img.style.top = `${Math.random() * (window.innerHeight - 200)}px`;
-                    img.style.left = `${Math.random() * (window.innerWidth - 200)}px`;
-                    body.appendChild(img);
-                    setTimeout(() => body.removeChild(img), 3000);
-                    break;
-                default:
-                    break;
-            }
+            button.textContent = getRandomItem(messages);
+            getRandomItem(sounds).play();
         });
     </script>
 </body>
