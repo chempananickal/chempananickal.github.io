@@ -1,0 +1,37 @@
+body {
+    background-color: #ffefd5;
+    color: #0000ff;
+    font-family: "Comic Sans MS", "Comic Sans", cursive;
+    text-align: center;
+}
+h1 {
+    font-size: 3em;
+    text-shadow: 2px 2px #ff0000;
+}
+p {
+    font-size: 1.5em;
+}
+ul {
+    list-style-type: none;
+}
+li {
+    margin: 10px 0;
+}
+a {
+    color: #ff00ff;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+marquee {
+    font-size: 2em;
+    color: #ff00ff;
+    background-color: #0000ff;
+}
+.counter {
+    margin-top: 20px;
+}
+.guestbook {
+    margin-top: 20px;
+}
