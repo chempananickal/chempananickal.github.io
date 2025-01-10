@@ -7,20 +7,37 @@
     <style>
         body {
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
             background-color: #f0f0f0;
             font-family: "Comic Sans MS", "Comic Sans", cursive;
         }
+        h1 {
+            font-family: "Comic Sans MS", "Comic Sans", cursive;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
         #button {
             padding: 20px;
             font-size: 24px;
             cursor: pointer;
+            border-radius: 50%;
+            font-family: "Comic Sans MS", "Comic Sans", cursive;
+        }
+        #credit {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            padding: 10px;
+            background-color: #f0f0f0;
         }
     </style>
 </head>
 <body>
+    <h1>Annoying Button Test</h1>
     <button id="button">Press Me</button>
     <script>
         let count = 0;
@@ -65,6 +82,6 @@
             getRandomItem(sounds).play();
         });
     </script>
-<div id="credit">Sounds provided by <a href="https://www.myinstants.com">MyInstants</a></div>
+    <div id="credit">Sounds provided by <a href="https://www.myinstants.com">MyInstants</a></div>
 </body>
 </html>
