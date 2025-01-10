@@ -11,7 +11,7 @@
             align-items: center;
             height: 100vh;
             background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
+            font-family: "Comic Sans MS", "Comic Sans", cursive;
         }
         #button {
             padding: 20px;
@@ -26,16 +26,24 @@
         let count = 0;
         const button = document.getElementById('button');
         const messages = [
-            "Please, stop pressing me!",
-            "I beg you, no more!",
-            "Why are you doing this to me?",
-            "I'm getting tired, please stop.",
-            "You're really testing my patience!",
-            "Seriously, stop it!",
-            "I'm warning you, don't press me again!",
-            "Can you please not press me?",
-            "I'm begging you, leave me alone!",
-            "You're really annoying, stop pressing me!"
+            "Please, stop pressing me!", "I beg you, no more!", "Why are you doing this to me?", "I'm getting tired, please stop.",
+            "You're really testing my patience!", "Seriously, stop it!", "I'm warning you, don't press me again!", 
+            "Can you please not press me?", "I'm begging you, leave me alone!", "You're really annoying, stop pressing me!",
+            "Why must you torment me?", "Enough already!", "I can't take this anymore!", "You have no mercy!", "Spare me!",
+            "What did I do to deserve this?", "Just stop!", "You're relentless!", "I'm at my wit's end!", "Mercy, please!",
+            "This is unbearable!", "I'm not a toy!", "Cease and desist!", "Let me be!", "I need a break!", "You're driving me crazy!",
+            "This is cruel!", "Why won't you listen?", "I can't handle this!", "You're a bully!", "Stop the madness!", "Leave me be!",
+            "You're heartless!", "I'm suffering!", "This is torture!", "Have some pity!", "You're ruthless!", "Stop this insanity!",
+            "I'm breaking down!", "You're too much!", "I'm exhausted!", "This is painful!", "You're a monster!", "I surrender!",
+            "You're tormenting me!", "I'm in agony!", "This is inhumane!", "You're unbearable!", "I'm pleading with you!", 
+            "You're too cruel!", "I'm at your mercy!", "This is relentless!", "You're a tyrant!", "I'm defenseless!", "This is brutal!",
+            "You're merciless!", "I'm in distress!", "This is harsh!", "You're oppressive!", "I'm in misery!", "This is punishing!",
+            "You're vicious!", "I'm in torment!", "This is savage!", "You're relentless!", "I'm in woe!", "This is ruthless!", 
+            "You're pitiless!", "I'm in pain!", "This is unkind!", "You're uncaring!", "I'm in suffering!", "This is severe!", 
+            "You're unmerciful!", "I'm in anguish!", "This is harsh treatment!", "You're unrelenting!", "I'm in sorrow!", 
+            "This is brutal!", "You're unyielding!", "I'm in grief!", "This is severe!", "You're unpitying!", "I'm in despair!", 
+            "This is merciless!", "You're unsparing!", "I'm in discomfort!", "This is cruel!", "You're pitiless!", "I'm in agony!", 
+            "This is ruthless!", "You're relentless!", "I'm in wretchedness!", "This is savage!", "You're remorseless!", "I'm in affliction!"
         ];
 
         const sounds = [
