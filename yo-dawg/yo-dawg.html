@@ -66,35 +66,17 @@
 
         <div class="grid">
           <div class="panel">
-            <h2>Next move</h2>
+            <h2>Mission control</h2>
             <p id="stepHint" class="panel__hint">Start the build to see your first task.</p>
-            <div class="form">
-              <label>
-                Action
-                <select id="actionType">
-                  <option value="create_state">Create new state</option>
-                  <option value="add_transition">Add transition</option>
-                  <option value="set_link">Set suffix link</option>
-                  <option value="create_clone">Create clone state</option>
-                  <option value="redirect_transition">Redirect transition to clone</option>
-                </select>
-              </label>
-              <label>
-                From state
-                <select id="fromState"></select>
-              </label>
-              <label>
-                Letter
-                <input id="letterInput" type="text" maxlength="1" placeholder="a" />
-              </label>
-              <label>
-                To state
-                <select id="toState"></select>
-              </label>
-              <div class="form__actions">
-                <button id="submitAction" class="btn btn--primary">Commit step</button>
-                <button id="autoStep" class="btn btn--ghost">Auto-step (-2 pts)</button>
-              </div>
+            <div class="build-tools">
+              <button id="spawnState" class="btn btn--primary">Forge a new orb</button>
+              <button id="spawnClone" class="btn btn--ghost">Mirror orb</button>
+              <button id="autoStep" class="btn btn--ghost">Auto assist (-2)</button>
+            </div>
+            <div class="build-meta">
+              <span>Rune:</span>
+              <span id="currentRune" class="chip">—</span>
+              <span id="buildMode" class="panel__hint">Tap a tool, then place it on the board.</span>
             </div>
             <div id="buildFeedback" class="feedback"></div>
             <div class="progress">
@@ -103,9 +85,9 @@
           </div>
 
           <div class="panel">
-            <h2>Automaton map</h2>
-            <svg id="automatonSvg" class="automaton" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet"></svg>
-            <div id="stateList" class="state-list"></div>
+            <h2>Build board</h2>
+            <p class="panel__hint">Drag paths between orbs to draw transitions. Drag tethers to set links.</p>
+            <svg id="buildBoard" class="automaton" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet"></svg>
           </div>
         </div>
       </div>
@@ -128,21 +110,22 @@
 
         <div class="grid">
           <div class="panel">
-            <h2>Word track</h2>
+            <h2>Quest log</h2>
             <div id="wordTrack" class="word-track"></div>
             <div class="current-letter">
-              Current letter: <span id="currentLetter">—</span>
+              Rune to match: <span id="currentLetter">—</span>
             </div>
             <div class="form__actions">
-              <button id="skipLetter" class="btn btn--ghost">Skip letter</button>
-              <button id="restartTraversal" class="btn btn--ghost">Restart traversal</button>
+              <button id="skipLetter" class="btn btn--ghost">Skip rune</button>
+              <button id="restartTraversal" class="btn btn--ghost">Restart quest</button>
             </div>
             <div id="traversalFeedback" class="feedback"></div>
           </div>
 
           <div class="panel">
-            <h2>State board</h2>
-            <div id="stateBoard" class="state-board"></div>
+            <h2>Jump board</h2>
+            <p class="panel__hint">Tap a glowing orb to jump. Wrong jumps make your pawn fall.</p>
+            <svg id="traverseBoard" class="automaton" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet"></svg>
           </div>
         </div>
       </div>
