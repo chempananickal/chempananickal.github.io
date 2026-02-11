@@ -11,16 +11,14 @@ const buildScore = document.getElementById("buildScore");
 const buildAccuracy = document.getElementById("buildAccuracy");
 const buildStep = document.getElementById("buildStep");
 const stepHint = document.getElementById("stepHint");
-const actionType = document.getElementById("actionType");
-const fromStateSelect = document.getElementById("fromState");
-const toStateSelect = document.getElementById("toState");
-const letterInput = document.getElementById("letterInput");
-const submitAction = document.getElementById("submitAction");
-const autoStep = document.getElementById("autoStep");
-const buildFeedback = document.getElementById("buildFeedback");
 const buildProgressBar = document.getElementById("buildProgressBar");
-const automatonSvg = document.getElementById("automatonSvg");
-const stateList = document.getElementById("stateList");
+const buildFeedback = document.getElementById("buildFeedback");
+const spawnStateButton = document.getElementById("spawnState");
+const spawnCloneButton = document.getElementById("spawnClone");
+const autoStepButton = document.getElementById("autoStep");
+const currentRune = document.getElementById("currentRune");
+const buildMode = document.getElementById("buildMode");
+const buildBoard = document.getElementById("buildBoard");
 
 const traversalScore = document.getElementById("traversalScore");
 const currentMatch = document.getElementById("currentMatch");
@@ -30,7 +28,7 @@ const currentLetter = document.getElementById("currentLetter");
 const skipLetter = document.getElementById("skipLetter");
 const restartTraversal = document.getElementById("restartTraversal");
 const traversalFeedback = document.getElementById("traversalFeedback");
-const stateBoard = document.getElementById("stateBoard");
+const traverseBoard = document.getElementById("traverseBoard");
 
 const gameState = {
   baseWord: "",
@@ -38,6 +36,8 @@ const gameState = {
   buildSteps: [],
   expectedStates: [],
   playerStates: [],
+  playerPositions: {},
+  expectedPositions: {},
   stepIndex: 0,
   score: 0,
   attempts: 0,
@@ -49,6 +49,10 @@ const gameState = {
   bestLength: 0,
   bestSubstring: "",
   targetLcs: "",
+  decoys: [],
+  pawnId: null,
+  activeTool: null,
+  dragState: null,
 };
 
 const sanitizeWord = (word) => word.toLowerCase().replace(/[^a-z]/g, "");
@@ -75,7 +79,7 @@ const generateBuildSteps = (word) => {
   for (const ch of word) {
     const cur = states.length;
     states.push(makeState(cur, states[last].len + 1));
-    steps.push({ type: "create_state", id: cur, len: states[cur].len, note: `Create state ${cur} for '${ch}'.` });
+    steps.push({ type: "create_state", id: cur, len: states[cur].len, letter: ch });
 
     let p = last;
     while (p !== -1 && states[p].next[ch] === undefined) {
@@ -116,6 +120,46 @@ const generateBuildSteps = (word) => {
   return { steps, states };
 };
 
+const layoutPositions = (count, width = 800, height = 400) => {
+  const positions = {};
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const radius = Math.min(width, height) / 2.6;
+
+  for (let i = 0; i < count; i += 1) {
+    const angle = (Math.PI * 2 * i) / Math.max(1, count);
+    const jitter = (i % 3) * 10;
+    positions[i] = {
+      x: centerX + Math.cos(angle) * (radius + jitter),
+      y: centerY + Math.sin(angle) * (radius + jitter),
+    };
+  }
+
+  positions[0] = { x: centerX - radius * 0.3, y: centerY + radius * 0.3 };
+  return positions;
+};
+
+const toSvgPoint = (svg, event) => {
+  const point = svg.createSVGPoint();
+  point.x = event.clientX;
+  point.y = event.clientY;
+  return point.matrixTransform(svg.getScreenCTM().inverse());
+};
+
+const setActiveTool = (tool) => {
+  gameState.activeTool = tool;
+  spawnStateButton.classList.toggle("btn--active", tool === "spawn_state");
+  spawnCloneButton.classList.toggle("btn--active", tool === "spawn_clone");
+
+  if (tool === "spawn_state") {
+    buildMode.textContent = "Tap the board to place your new orb.";
+  } else if (tool === "spawn_clone") {
+    buildMode.textContent = "Tap the board to place the mirror orb.";
+  } else {
+    buildMode.textContent = "Drag between orbs to draw paths or links.";
+  }
+};
+
 const updateTabState = (panelId) => {
   tabButtons.forEach((button) => {
     const isActive = button.dataset.tab === panelId;
@@ -138,101 +182,24 @@ const updateBuildStats = () => {
 const updateBuildHint = () => {
   const step = gameState.buildSteps[gameState.stepIndex];
   if (!step) {
-    stepHint.textContent = "Build complete! Switch to traversal for the next challenge.";
+    stepHint.textContent = "Build complete! Time to jump the graph.";
+    currentRune.textContent = "—";
     return;
   }
+
   if (step.type === "create_state") {
-    stepHint.textContent = `Create new state ${step.id} (length ${step.len}).`;
+    stepHint.textContent = `Forge a new orb for rune "${step.letter}".`;
   } else if (step.type === "add_transition") {
-    stepHint.textContent = `Add transition '${step.letter}' from ${step.from} → ${step.to}.`;
+    stepHint.textContent = `Draw a path for rune "${step.letter}" from orb ${step.from} to orb ${step.to}.`;
   } else if (step.type === "set_link") {
-    stepHint.textContent = `Set suffix link of ${step.from} to ${step.to}.`;
+    stepHint.textContent = `Tether orb ${step.from} back to orb ${step.to}.`;
   } else if (step.type === "create_clone") {
-    stepHint.textContent = `Create clone ${step.id} from state ${step.cloneOf}.`;
+    stepHint.textContent = `Mirror orb ${step.cloneOf}. Place clone orb ${step.id}.`;
   } else if (step.type === "redirect_transition") {
-    stepHint.textContent = `Redirect '${step.letter}' from ${step.from} to clone ${step.to}.`;
-  }
-};
-
-const refreshStateOptions = () => {
-  const maxId = Math.max(
-    ...gameState.playerStates.map((state) => state.id),
-    gameState.buildSteps[gameState.stepIndex]?.id ?? 0
-  );
-
-  const options = [];
-  for (let i = 0; i <= maxId; i += 1) {
-    options.push(`<option value="${i}">State ${i}</option>`);
+    stepHint.textContent = `Redirect rune "${step.letter}" from orb ${step.from} to clone ${step.to}.`;
   }
 
-  fromStateSelect.innerHTML = options.join("");
-  toStateSelect.innerHTML = options.join("");
-};
-
-const renderStateList = () => {
-  stateList.innerHTML = gameState.playerStates
-    .map((state) => {
-      const transitions = Object.entries(state.next)
-        .map(([letter, target]) => `${letter}→${target}`)
-        .join(", ");
-      return `
-        <div class="state-card ${gameState.traversalState === state.id ? "state-card--current" : ""}">
-          <h4>State ${state.id}</h4>
-          <p>len: ${state.len}, link: ${state.link}</p>
-          <p>${transitions || "No transitions yet"}</p>
-        </div>
-      `;
-    })
-    .join("");
-};
-
-const renderAutomaton = () => {
-  const states = gameState.playerStates;
-  if (states.length === 0) return;
-
-  const cols = Math.ceil(Math.sqrt(states.length));
-  const spacingX = 160;
-  const spacingY = 120;
-  const positions = states.map((state, index) => ({
-    id: state.id,
-    x: 80 + (index % cols) * spacingX,
-    y: 80 + Math.floor(index / cols) * spacingY,
-  }));
-
-  const edges = [];
-  states.forEach((state) => {
-    Object.entries(state.next).forEach(([letter, target]) => {
-      const fromPos = positions.find((pos) => pos.id === state.id);
-      const toPos = positions.find((pos) => pos.id === target);
-      if (fromPos && toPos) {
-        edges.push({ from: fromPos, to: toPos, letter });
-      }
-    });
-  });
-
-  const edgeMarkup = edges
-    .map((edge) => {
-      const dx = edge.to.x - edge.from.x;
-      const dy = edge.to.y - edge.from.y;
-      const mx = edge.from.x + dx / 2;
-      const my = edge.from.y + dy / 2;
-      return `
-        <line x1="${edge.from.x}" y1="${edge.from.y}" x2="${edge.to.x}" y2="${edge.to.y}" stroke="#6ae1ff" stroke-width="1.5" />
-        <text x="${mx}" y="${my - 6}" fill="#9f7bff" font-size="12">${edge.letter}</text>
-      `;
-    })
-    .join("");
-
-  const nodeMarkup = positions
-    .map(
-      (pos) => `
-        <circle cx="${pos.x}" cy="${pos.y}" r="20" fill="#141a2e" stroke="#6ae1ff" stroke-width="2"></circle>
-        <text x="${pos.x}" y="${pos.y + 4}" text-anchor="middle" fill="#f7f7ff" font-size="12">${pos.id}</text>
-      `
-    )
-    .join("");
-
-  automatonSvg.innerHTML = `${edgeMarkup}${nodeMarkup}`;
+  currentRune.textContent = step.letter || "link";
 };
 
 const setFeedback = (element, message, type) => {
@@ -256,48 +223,22 @@ const applyStep = (step) => {
   }
 };
 
-const handleAction = (auto = false) => {
-  const step = gameState.buildSteps[gameState.stepIndex];
-  if (!step) return;
-
-  let valid = false;
-  if (auto) {
-    valid = true;
-  } else {
-    const selectedType = actionType.value;
-    const fromState = Number(fromStateSelect.value);
-    const toState = Number(toStateSelect.value);
-    const letter = letterInput.value.toLowerCase();
-
-    if (selectedType === step.type) {
-      if (step.type === "create_state" || step.type === "create_clone") {
-        valid = toState === step.id;
-      } else if (step.type === "add_transition" || step.type === "redirect_transition") {
-        valid = fromState === step.from && toState === step.to && letter === step.letter;
-      } else if (step.type === "set_link") {
-        valid = fromState === step.from && toState === step.to;
-      }
-    }
-  }
-
+const advanceBuild = (valid, message) => {
   gameState.attempts += 1;
 
   if (valid) {
     gameState.correct += 1;
-    gameState.score += auto ? -2 : 5;
-    applyStep(step);
+    gameState.score += 5;
     gameState.stepIndex += 1;
-    setFeedback(buildFeedback, "Nice move! Automaton updated.", "success");
+    setFeedback(buildFeedback, message || "Nice move!", "success");
   } else {
     gameState.score = Math.max(0, gameState.score - 3);
-    setFeedback(buildFeedback, "That move doesn't match the next required step.", "error");
+    setFeedback(buildFeedback, message || "That move doesn't match the mission.", "error");
   }
 
   updateBuildStats();
   updateBuildHint();
-  refreshStateOptions();
-  renderAutomaton();
-  renderStateList();
+  renderBuildBoard();
 
   if (gameState.stepIndex >= gameState.buildSteps.length) {
     const traverseTab = document.querySelector('[data-tab="traverse"]');
@@ -306,24 +247,167 @@ const handleAction = (auto = false) => {
   }
 };
 
-const resetBuild = () => {
-  const buildData = generateBuildSteps(gameState.baseWord);
-  gameState.buildSteps = buildData.steps;
-  gameState.expectedStates = buildData.states;
-  gameState.playerStates = [makeState(0)];
-  gameState.stepIndex = 0;
-  gameState.score = 0;
-  gameState.attempts = 0;
-  gameState.correct = 0;
+const handleAutoStep = () => {
+  const step = gameState.buildSteps[gameState.stepIndex];
+  if (!step) return;
 
-  updateBuildStats();
-  updateBuildHint();
-  refreshStateOptions();
-  renderAutomaton();
-  renderStateList();
+  gameState.score = Math.max(0, gameState.score - 2);
+  applyStep(step);
+  advanceBuild(true, "Auto assist placed the correct move.");
 };
 
-const computeLcs = (word, query, states) => {
+const updatePositions = () => {
+  const count = Math.max(gameState.playerStates.length, 1);
+  if (Object.keys(gameState.playerPositions).length === 0) {
+    gameState.playerPositions = layoutPositions(count);
+  } else if (Object.keys(gameState.playerPositions).length < count) {
+    const extra = layoutPositions(count);
+    for (let i = 0; i < count; i += 1) {
+      if (!gameState.playerPositions[i]) {
+        gameState.playerPositions[i] = extra[i];
+      }
+    }
+  }
+};
+
+const renderEdges = (svg, states, positions, includeLinks = false, highlightLetter = null) => {
+  const edges = [];
+
+  states.forEach((state) => {
+    Object.entries(state.next).forEach(([letter, target]) => {
+      const fromPos = positions[state.id];
+      const toPos = positions[target];
+      if (fromPos && toPos) {
+        edges.push({ from: state.id, to: target, letter });
+      }
+    });
+
+    if (includeLinks && state.link !== -1 && positions[state.link]) {
+      edges.push({ from: state.id, to: state.link, letter: "link", isLink: true });
+    }
+  });
+
+  const edgeMarkup = edges
+    .map((edge) => {
+      const from = positions[edge.from];
+      const to = positions[edge.to];
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      const mx = from.x + dx / 2;
+      const my = from.y + dy / 2;
+      const isActive = highlightLetter && edge.letter === highlightLetter && !edge.isLink;
+      const classes = [
+        "edge",
+        isActive ? "edge--active" : "",
+        edge.isLink ? "edge--link" : "",
+      ].filter(Boolean).join(" ");
+
+      return `
+        <line class="${classes}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" />
+        ${edge.isLink ? "" : `<text class="edge__label" x="${mx}" y="${my - 6}">${edge.letter}</text>`}
+      `;
+    })
+    .join("");
+
+  svg.insertAdjacentHTML("beforeend", edgeMarkup);
+};
+
+const renderNodes = (svg, states, positions, options = {}) => {
+  const { current = null, choices = [], decoys = [] } = options;
+  const nodeMarkup = states
+    .map((state) => {
+      const pos = positions[state.id];
+      const isCurrent = current === state.id;
+      const isChoice = choices.includes(state.id);
+      const isDecoy = decoys.includes(state.id);
+      const classes = [
+        "node",
+        isCurrent ? "node--current" : "",
+        isChoice ? "node--choice" : "",
+        isDecoy ? "node--decoy" : "",
+      ].filter(Boolean).join(" ");
+
+      return `
+        <g class="${classes}" data-id="${state.id}">
+          <circle class="node__circle" cx="${pos.x}" cy="${pos.y}" r="22"></circle>
+          <text class="node__label" x="${pos.x}" y="${pos.y + 4}" text-anchor="middle">Orb ${state.id}</text>
+        </g>
+      `;
+    })
+    .join("");
+
+  svg.insertAdjacentHTML("beforeend", nodeMarkup);
+};
+
+const renderBuildBoard = () => {
+  updatePositions();
+  const states = gameState.playerStates;
+  buildBoard.innerHTML = "";
+
+  renderEdges(buildBoard, states, gameState.playerPositions, true);
+
+  renderNodes(buildBoard, states, gameState.playerPositions, {
+    current: gameState.playerStates.at(-1)?.id ?? 0,
+  });
+
+  if (gameState.dragState?.line) {
+    buildBoard.appendChild(gameState.dragState.line);
+  }
+};
+
+const renderTraversalBoard = () => {
+  const states = gameState.expectedStates;
+  traverseBoard.innerHTML = "";
+
+  renderEdges(traverseBoard, states, gameState.expectedPositions, false, gameState.queryWord[gameState.traversalIndex]);
+
+  const validTargets = [];
+  const current = gameState.expectedStates[gameState.traversalState];
+  const currentLetterValue = gameState.queryWord[gameState.traversalIndex];
+
+  if (current && currentLetterValue && current.next[currentLetterValue] !== undefined) {
+    validTargets.push(current.next[currentLetterValue]);
+  }
+
+  renderNodes(traverseBoard, states, gameState.expectedPositions, {
+    current: gameState.traversalState,
+    choices: validTargets,
+    decoys: gameState.decoys,
+  });
+
+  const pawnPos = gameState.expectedPositions[gameState.traversalState];
+  if (pawnPos) {
+    const pawnMarkup = `
+      <g class="pawn" id="pawn">
+        <circle cx="${pawnPos.x}" cy="${pawnPos.y - 30}" r="10"></circle>
+      </g>
+    `;
+    traverseBoard.insertAdjacentHTML("beforeend", pawnMarkup);
+    gameState.pawnId = "pawn";
+  }
+};
+
+const setupTraversalTrack = () => {
+  wordTrack.innerHTML = "";
+  gameState.queryWord.split("").forEach((letter, index) => {
+    const span = document.createElement("span");
+    span.textContent = letter;
+    if (index === 0) span.classList.add("active");
+    wordTrack.appendChild(span);
+  });
+};
+
+const updateTraversalHUD = () => {
+  const letters = wordTrack.querySelectorAll("span");
+  letters.forEach((span, index) => {
+    span.classList.toggle("active", index === gameState.traversalIndex);
+    span.classList.toggle("done", index < gameState.traversalIndex);
+  });
+
+  currentLetter.textContent = gameState.queryWord[gameState.traversalIndex] || "—";
+};
+
+const computeLcs = (query, states) => {
   let v = 0;
   let l = 0;
   let best = 0;
@@ -362,58 +446,44 @@ const setupTraversal = () => {
   gameState.traversalLength = 0;
   gameState.bestLength = 0;
   gameState.bestSubstring = "";
-
   traversalScore.textContent = "0";
   currentMatch.textContent = "0";
   lcsValue.textContent = "—";
   traversalFeedback.textContent = "";
-  wordTrack.innerHTML = "";
-  stateBoard.innerHTML = "";
 
-  gameState.targetLcs = computeLcs(gameState.baseWord, gameState.queryWord, gameState.expectedStates);
+  gameState.targetLcs = computeLcs(gameState.queryWord, gameState.expectedStates);
+  gameState.decoys = [];
+  const decoyCount = Math.min(3, gameState.expectedStates.length - 1);
+  for (let i = 0; i < decoyCount; i += 1) {
+    const candidate = Math.floor(Math.random() * gameState.expectedStates.length);
+    if (candidate !== 0 && !gameState.decoys.includes(candidate)) {
+      gameState.decoys.push(candidate);
+    }
+  }
 
-  gameState.queryWord.split("").forEach((letter, index) => {
-    const span = document.createElement("span");
-    span.textContent = letter;
-    if (index === 0) span.classList.add("active");
-    wordTrack.appendChild(span);
-  });
-
-  updateTraversalUI();
+  setupTraversalTrack();
+  updateTraversalHUD();
+  renderTraversalBoard();
 };
 
-const updateTraversalUI = () => {
-  const letters = wordTrack.querySelectorAll("span");
-  letters.forEach((span, index) => {
-    span.classList.toggle("active", index === gameState.traversalIndex);
-    span.classList.toggle("done", index < gameState.traversalIndex);
-  });
+const movePawn = (targetId, isValid) => {
+  const pawn = document.getElementById(gameState.pawnId);
+  if (!pawn) return;
 
-  const letter = gameState.queryWord[gameState.traversalIndex] || "—";
-  currentLetter.textContent = letter;
+  const targetPos = gameState.expectedPositions[targetId] || { x: 0, y: 0 };
+  const dx = targetPos.x;
+  const dy = targetPos.y - 30;
+  pawn.style.transform = `translate(${dx - targetPos.x}px, ${dy - targetPos.y}px)`;
 
-  const currentState = gameState.expectedStates[gameState.traversalState];
-  const transitions = Object.entries(currentState.next);
-
-  stateBoard.innerHTML = `
-    <div class="state-card state-card--current">
-      <h4>Current state: ${currentState.id}</h4>
-      <p>len: ${currentState.len}, link: ${currentState.link}</p>
-      <div>
-        ${transitions
-          .map(([label, target]) => {
-            const enabled = label === letter;
-            return `<button data-target="${target}" data-letter="${label}" ${enabled ? "" : "disabled"}>${label} → ${target}</button>`;
-          })
-          .join("") || "<p>No transitions</p>"}
-      </div>
-    </div>
-  `;
+  if (!isValid) {
+    pawn.classList.add("pawn--fall");
+    pawn.style.transform = `translate(${dx}px, ${dy + 160}px)`;
+  }
 };
 
-const advanceTraversal = (matched, targetState) => {
-  if (matched) {
-    gameState.traversalState = targetState;
+const advanceTraversal = (targetId, isValid) => {
+  if (isValid) {
+    gameState.traversalState = targetId;
     gameState.traversalLength += 1;
     gameState.traversalScore += 4;
   } else {
@@ -440,7 +510,118 @@ const advanceTraversal = (matched, targetState) => {
     return;
   }
 
-  updateTraversalUI();
+  updateTraversalHUD();
+  renderTraversalBoard();
+};
+
+const handleBuildBoardClick = (event) => {
+  const step = gameState.buildSteps[gameState.stepIndex];
+  if (!step) return;
+
+  const point = toSvgPoint(buildBoard, event);
+
+  if (gameState.activeTool === "spawn_state" || gameState.activeTool === "spawn_clone") {
+    const newId = gameState.playerStates.length;
+    const isClone = gameState.activeTool === "spawn_clone";
+    const expectedType = isClone ? "create_clone" : "create_state";
+
+    const valid = step.type === expectedType && step.id === newId;
+    if (valid) {
+      applyStep(step);
+      gameState.playerPositions[newId] = { x: point.x, y: point.y };
+      advanceBuild(true, "Orb placed!");
+      setActiveTool(null);
+    } else {
+      advanceBuild(false, "That orb doesn't belong here yet.");
+    }
+  }
+};
+
+const handleDragStart = (event) => {
+  const node = event.target.closest(".node");
+  if (!node) return;
+  const fromId = Number(node.dataset.id);
+  const step = gameState.buildSteps[gameState.stepIndex];
+  if (!step) return;
+
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  line.setAttribute("class", "drag-line");
+  const fromPos = gameState.playerPositions[fromId];
+  line.setAttribute("x1", fromPos.x);
+  line.setAttribute("y1", fromPos.y);
+  line.setAttribute("x2", fromPos.x);
+  line.setAttribute("y2", fromPos.y);
+
+  gameState.dragState = { fromId, line };
+  buildBoard.appendChild(line);
+};
+
+const handleDragMove = (event) => {
+  if (!gameState.dragState) return;
+  const point = toSvgPoint(buildBoard, event);
+  gameState.dragState.line.setAttribute("x2", point.x);
+  gameState.dragState.line.setAttribute("y2", point.y);
+};
+
+const handleDragEnd = (event) => {
+  if (!gameState.dragState) return;
+  const targetNode = event.target.closest(".node");
+  const step = gameState.buildSteps[gameState.stepIndex];
+  const fromId = gameState.dragState.fromId;
+
+  gameState.dragState.line.remove();
+  gameState.dragState = null;
+
+  if (!targetNode || !step) return;
+  const toId = Number(targetNode.dataset.id);
+
+  const isTransition = step.type === "add_transition" || step.type === "redirect_transition";
+  const isLink = step.type === "set_link";
+
+  if (isTransition && step.from === fromId && step.to === toId) {
+    applyStep(step);
+    advanceBuild(true, "Rune path linked!");
+  } else if (isLink && step.from === fromId && step.to === toId) {
+    applyStep(step);
+    advanceBuild(true, "Tether locked!");
+  } else {
+    advanceBuild(false, "That tether doesn't match the mission.");
+  }
+};
+
+const handleTraversalClick = (event) => {
+  const node = event.target.closest(".node");
+  if (!node) return;
+  const targetId = Number(node.dataset.id);
+  const current = gameState.expectedStates[gameState.traversalState];
+  const rune = gameState.queryWord[gameState.traversalIndex];
+  const validTarget = current?.next[rune];
+
+  if (targetId === validTarget) {
+    setFeedback(traversalFeedback, "Clean jump!", "success");
+    advanceTraversal(targetId, true);
+  } else {
+    setFeedback(traversalFeedback, "You fell off the path!", "error");
+    advanceTraversal(targetId, false);
+  }
+};
+
+const resetBuild = () => {
+  const buildData = generateBuildSteps(gameState.baseWord);
+  gameState.buildSteps = buildData.steps;
+  gameState.expectedStates = buildData.states;
+  gameState.playerStates = [makeState(0)];
+  gameState.stepIndex = 0;
+  gameState.score = 0;
+  gameState.attempts = 0;
+  gameState.correct = 0;
+
+  gameState.playerPositions = layoutPositions(1);
+  gameState.expectedPositions = layoutPositions(gameState.expectedStates.length);
+
+  updateBuildStats();
+  updateBuildHint();
+  renderBuildBoard();
 };
 
 startGameButton.addEventListener("click", () => {
@@ -470,30 +651,23 @@ tabButtons.forEach((button) => {
   });
 });
 
-submitAction.addEventListener("click", () => handleAction(false));
-autoStep.addEventListener("click", () => handleAction(true));
+spawnStateButton.addEventListener("click", () => setActiveTool("spawn_state"));
+spawnCloneButton.addEventListener("click", () => setActiveTool("spawn_clone"));
+autoStepButton.addEventListener("click", handleAutoStep);
 
-stateBoard.addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-target]");
-  if (!button) return;
+buildBoard.addEventListener("click", handleBuildBoardClick);
+buildBoard.addEventListener("pointerdown", handleDragStart);
+buildBoard.addEventListener("pointermove", handleDragMove);
+buildBoard.addEventListener("pointerup", handleDragEnd);
 
-  const target = Number(button.dataset.target);
-  const letter = button.dataset.letter;
-  const expectedLetter = gameState.queryWord[gameState.traversalIndex];
-
-  if (letter === expectedLetter) {
-    setFeedback(traversalFeedback, "Good move!", "success");
-    advanceTraversal(true, target);
-  }
-});
+traverseBoard.addEventListener("click", handleTraversalClick);
 
 skipLetter.addEventListener("click", () => {
-  setFeedback(traversalFeedback, "Skipped this letter. Resetting to state 0.", "error");
-  advanceTraversal(false, 0);
+  setFeedback(traversalFeedback, "Skipped the rune. Resetting to start.", "error");
+  advanceTraversal(0, false);
 });
 
-restartTraversal.addEventListener("click", () => setupTraversal());
+restartTraversal.addEventListener("click", setupTraversal);
 
-refreshStateOptions();
 updateBuildStats();
 updateBuildHint();
