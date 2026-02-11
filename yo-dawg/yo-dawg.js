@@ -466,21 +466,6 @@ const setupTraversal = () => {
   renderTraversalBoard();
 };
 
-const movePawn = (targetId, isValid) => {
-  const pawn = document.getElementById(gameState.pawnId);
-  if (!pawn) return;
-
-  const targetPos = gameState.expectedPositions[targetId] || { x: 0, y: 0 };
-  const dx = targetPos.x;
-  const dy = targetPos.y - 30;
-  pawn.style.transform = `translate(${dx - targetPos.x}px, ${dy - targetPos.y}px)`;
-
-  if (!isValid) {
-    pawn.classList.add("pawn--fall");
-    pawn.style.transform = `translate(${dx}px, ${dy + 160}px)`;
-  }
-};
-
 const advanceTraversal = (targetId, isValid) => {
   if (isValid) {
     gameState.traversalState = targetId;
