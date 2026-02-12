@@ -3,19 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Yo DAWG — Suffix Automaton Quest</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <title>Suffix Automaton Trainer</title>
   <link rel="stylesheet" href="yo-dawg.css" />
 </head>
 <body>
   <header class="hero">
     <div class="hero__content">
-      <p class="hero__eyebrow">Direct Acyclic Word Graph training ground</p>
-      <h1>Yo DAWG</h1>
+      <p class="hero__eyebrow">Interactive Suffix Automaton Learning Tool</p>
+      <h1>Suffix Automaton Trainer</h1>
       <p class="hero__subtitle">
-        Build a suffix automaton by hand, then traverse it like a chess match to uncover the longest common substring.
+        Build a suffix automaton by hand, then traverse it to find the longest common substring.
       </p>
     </div>
   </header>
@@ -44,8 +41,8 @@
 
     <section class="game hidden" id="gameArea">
       <div class="tabs">
-        <button class="tab tab--active" data-tab="build">Build Lab</button>
-        <button class="tab" data-tab="traverse">Traversal Quest</button>
+        <button class="tab tab--active" data-tab="build">Construction</button>
+        <button class="tab" data-tab="traverse">Traversal</button>
       </div>
 
       <div class="tab-panel tab-panel--active" id="build">
@@ -66,17 +63,17 @@
 
         <div class="grid">
           <div class="panel">
-            <h2>Mission control</h2>
+            <h2>Control Panel</h2>
             <p id="stepHint" class="panel__hint">Start the build to see your first task.</p>
             <div class="build-tools">
-              <button id="spawnState" class="btn btn--primary">Forge a new orb</button>
-              <button id="spawnClone" class="btn btn--ghost">Mirror orb</button>
+              <button id="spawnState" class="btn btn--primary">Create new state</button>
+              <button id="spawnClone" class="btn btn--ghost">Clone state</button>
               <button id="autoStep" class="btn btn--ghost">Auto assist (-2)</button>
             </div>
             <div class="build-meta">
-              <span>Rune:</span>
+              <span>Character:</span>
               <span id="currentRune" class="chip">—</span>
-              <span id="buildMode" class="panel__hint">Tap a tool, then place it on the board.</span>
+              <span id="buildMode" class="panel__hint">Select a tool, then place it on the graph.</span>
             </div>
             <div id="buildFeedback" class="feedback"></div>
             <div class="progress">
@@ -85,8 +82,8 @@
           </div>
 
           <div class="panel">
-            <h2>Build board</h2>
-            <p class="panel__hint">Drag paths between orbs to draw transitions. Drag tethers to set links.</p>
+            <h2>Automaton Graph</h2>
+            <p class="panel__hint">Drag between states to create transitions. Drag to set suffix links.</p>
             <svg id="buildBoard" class="automaton" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet"></svg>
           </div>
         </div>
@@ -110,21 +107,21 @@
 
         <div class="grid">
           <div class="panel">
-            <h2>Quest log</h2>
+            <h2>Traversal Status</h2>
             <div id="wordTrack" class="word-track"></div>
             <div class="current-letter">
-              Rune to match: <span id="currentLetter">—</span>
+              Character to match: <span id="currentLetter">—</span>
             </div>
             <div class="form__actions">
-              <button id="skipLetter" class="btn btn--ghost">Skip rune</button>
-              <button id="restartTraversal" class="btn btn--ghost">Restart quest</button>
+              <button id="skipLetter" class="btn btn--ghost">Skip character</button>
+              <button id="restartTraversal" class="btn btn--ghost">Restart traversal</button>
             </div>
             <div id="traversalFeedback" class="feedback"></div>
           </div>
 
           <div class="panel">
-            <h2>Jump board</h2>
-            <p class="panel__hint">Tap a glowing orb to jump. Wrong jumps make your pawn fall.</p>
+            <h2>Traversal Graph</h2>
+            <p class="panel__hint">Click a highlighted state to move. Invalid moves will reset the pointer.</p>
             <svg id="traverseBoard" class="automaton" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet"></svg>
           </div>
         </div>
