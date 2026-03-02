@@ -49,10 +49,10 @@ function layoutPositions(states) {
   const byLen   = {};
   for (const s of states) (byLen[s.len] = byLen[s.len] || []).push(s.id);
 
-  const COL_W   = 130;
-  const ROW_H   = 80;
-  const PAD_X   = 55;
-  const PAD_Y   = 40;
+  const COL_W   = 155;
+  const ROW_H   = 95;
+  const PAD_X   = 60;
+  const PAD_Y   = 50;
   const maxRows = Math.max(...Object.values(byLen).map(a => a.length), 1);
   const svgH    = maxRows * ROW_H + PAD_Y * 2;
 
@@ -171,12 +171,13 @@ function renderGraph(svgEl, states, positions, hl = {}) {
   // ── Draw suffix links first (underneath transitions) ──
   linkEdges.forEach(e => {
     const p1 = positions[e.from], p2 = positions[e.to];
-    // Suffix links almost always go right→left; curve them well below
-    // so they run under the transitions between the same pair.
+    const dist    = Math.hypot(p2.x - p1.x, p2.y - p1.y);
     const goRight = p2.x >= p1.x;
-    let curve = goRight ? 58 : -58;
-    // Share a pair with a transition → push even further
-    if (sharedPair(e.from, e.to)) curve += goRight ? 18 : -18;
+    // Arc scales with pixel distance so long-range links bow well clear of nodes.
+    const base = Math.max(65, Math.min(dist * 0.45, 120));
+    let curve = goRight ? base : -base;
+    // Shares the same node-pair with a transition → push even further below.
+    if (sharedPair(e.from, e.to)) curve += goRight ? 30 : -30;
     const enew = hlEdge(newEdges, e.from, e.to);
     const emod = hlEdge(modEdges, e.from, e.to);
     const cls = enew ? 's-slink new' : emod ? 's-slink mod' : 's-slink';
@@ -186,17 +187,18 @@ function renderGraph(svgEl, states, positions, hl = {}) {
 
   // ── Draw transitions ──
   Object.values(transMap).forEach(({ from, to, chs }) => {
-    const p1  = positions[from], p2 = positions[to];
-    const n   = chs.length;
+    const p1      = positions[from], p2 = positions[to];
+    const n       = chs.length;
     const goRight = p2.x >= p1.x;
-    // Bidirectional transitions → push each side away from center
     const bidir   = hasReverse(from, to);
-    let baseCurve = goRight ? -22 : 22;
-    if (bidir) baseCurve = goRight ? -38 : 38;
+    // Larger base offset when bidirectional so both directions sit clear of each other.
+    let baseCurve = goRight ? -25 : 25;
+    if (bidir) baseCurve = goRight ? -48 : 48;
 
-    chs.forEach((ch, i) => {
-      // Fan multiple transitions between the same pair
-      const spread = n > 1 ? (i - (n - 1) / 2) * 30 : 0;
+    const sortedChs = [...chs].sort();
+    sortedChs.forEach((ch, i) => {
+      // Spread = 48 px per lane so adjacent arcs never cross.
+      const spread = n > 1 ? (i - (n - 1) / 2) * 48 : 0;
       const curve  = baseCurve + spread;
       const isActive = activeEdge && activeEdge.from === from && activeEdge.to === to;
       const enew = hlEdge(newEdges, from, to, ch);
