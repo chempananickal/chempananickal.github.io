@@ -3,131 +3,203 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Suffix Automaton Trainer</title>
+  <title>YO DAWG!! - Suffix Automaton Explainer</title>
   <link rel="stylesheet" href="yo-dawg.css" />
+  <meta name="description" content="An interactive step-by-step explainer for the Directed Acyclic Word Graph (suffix automaton) construction and traversal algorithm." />
 </head>
 <body>
-  <header class="hero">
-    <div class="hero__content">
-      <p class="hero__eyebrow">Interactive Suffix Automaton Learning Tool</p>
-      <h1>Suffix Automaton Trainer</h1>
-      <p class="hero__subtitle">
-        Build a suffix automaton by hand, then traverse it to find the longest common substring.
-      </p>
+
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle colour theme">&#x1F319; Dark</button>
+
+  <header class="retro-header" role="banner">
+    <div class="header-inner">
+      <div class="blink-badge" aria-hidden="true">&#9733; NEW!! &#9733;</div>
+      <h1 class="main-title">
+        <span class="title-yo">YO</span>&nbsp;<span class="title-dawg">DAWG!!!</span>
+      </h1>
+      <p class="tagline">&#x1F40D; THE SUFFIX AUTOMATON EXPLAINED!!!! &#x1F40D;</p>
+      <p class="subtagline">Learn how to build a Directed Acyclic Word Graph step by step!!!!</p>
+      <div class="retro-meta" aria-hidden="true">
+        <span>&#127775; Works on ANY browser!!! &#127775;</span>
+        <span class="pipe">|</span>
+        <span>&#x1F6A7;&nbsp;Under Construction&nbsp;&#x1F6A7;</span>
+      </div>
     </div>
   </header>
 
-  <main class="main">
-    <section class="setup" id="setup">
-      <div class="setup__card">
-        <h2>Choose your words</h2>
-        <p>Use lowercase letters for the cleanest experience. Spaces and punctuation are removed automatically.</p>
-        <div class="setup__fields">
-          <label>
-            Base word (the automaton you build)
-            <input id="baseWord" type="text" placeholder="abracadabra" />
-          </label>
-          <label>
-            Traversal word (find the LCS)
-            <input id="queryWord" type="text" placeholder="cadabro" />
-          </label>
+  <main class="page-main">
+
+    <!-- ===== WHAT IS A DAWG? ===== -->
+    <section class="content-box intro-box" aria-labelledby="what-heading">
+      <h2 id="what-heading">&#x1F4D6; WHAT IS A DAWG???!</h2>
+      <div class="intro-grid">
+        <div class="intro-text">
+          <p>
+            A <strong>Directed Acyclic Word Graph</strong> (also called a
+            <strong>Suffix Automaton</strong>) is a <em>minimal finite automaton</em>
+            that accepts every suffix of a word — and therefore every substring. It is
+            the smallest possible structure that can recognise all substrings of a word.
+          </p>
+          <p>
+            Unlike a trie, which stores each suffix separately, the DAWG merges states
+            that accept the same set of future suffixes into a single node. The result
+            has at most <strong>2n&nbsp;&minus;&nbsp;1 states</strong> and
+            <strong>3n&nbsp;&minus;&nbsp;4 transitions</strong> for a word of length&nbsp;<em>n</em>.
+          </p>
+          <p>
+            <strong>What can you do with it?</strong> After building the DAWG for
+            string&nbsp;<em>S</em>, you can find the <strong>Longest Common
+            Substring</strong> between <em>S</em> and any query string&nbsp;<em>T</em>
+            in O(|T|)&nbsp;time by traversing the automaton.
+          </p>
         </div>
-        <div class="setup__actions">
-          <button id="startGame" class="btn btn--primary">Start the challenge</button>
-          <span id="setupError" class="setup__error"></span>
-        </div>
-      </div>
-    </section>
-
-    <section class="game hidden" id="gameArea">
-      <div class="tabs">
-        <button class="tab tab--active" data-tab="build">Construction</button>
-        <button class="tab" data-tab="traverse">Traversal</button>
-      </div>
-
-      <div class="tab-panel tab-panel--active" id="build">
-        <div class="scoreboard">
-          <div>
-            <h3>Build Score</h3>
-            <p id="buildScore">0</p>
-          </div>
-          <div>
-            <h3>Accuracy</h3>
-            <p id="buildAccuracy">100%</p>
-          </div>
-          <div>
-            <h3>Step</h3>
-            <p id="buildStep">0 / 0</p>
-          </div>
-        </div>
-
-        <div class="grid">
-          <div class="panel">
-            <h2>Control Panel</h2>
-            <p id="stepHint" class="panel__hint">Start the build to see your first task.</p>
-            <div class="build-tools">
-              <button id="spawnState" class="btn btn--primary">Create new state</button>
-              <button id="spawnClone" class="btn btn--ghost">Clone state</button>
-              <button id="autoStep" class="btn btn--ghost">Auto assist (-2)</button>
-            </div>
-            <div class="build-meta">
-              <span>Character:</span>
-              <span id="currentRune" class="chip">—</span>
-              <span id="buildMode" class="panel__hint">Select a tool, then place it on the graph.</span>
-            </div>
-            <div id="buildFeedback" class="feedback"></div>
-            <div class="progress">
-              <div id="buildProgressBar" class="progress__bar"></div>
-            </div>
-          </div>
-
-          <div class="panel">
-            <h2>Automaton Graph</h2>
-            <p class="panel__hint">Drag between states to create transitions. Drag to set suffix links.</p>
-            <svg id="buildBoard" class="automaton" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet"></svg>
-          </div>
-        </div>
-      </div>
-
-      <div class="tab-panel" id="traverse">
-        <div class="scoreboard">
-          <div>
-            <h3>Traversal Score</h3>
-            <p id="traversalScore">0</p>
-          </div>
-          <div>
-            <h3>Current Match Length</h3>
-            <p id="currentMatch">0</p>
-          </div>
-          <div>
-            <h3>Longest Common Substring</h3>
-            <p id="lcsValue">—</p>
-          </div>
-        </div>
-
-        <div class="grid">
-          <div class="panel">
-            <h2>Traversal Status</h2>
-            <div id="wordTrack" class="word-track"></div>
-            <div class="current-letter">
-              Character to match: <span id="currentLetter">—</span>
-            </div>
-            <div class="form__actions">
-              <button id="skipLetter" class="btn btn--ghost">Skip character</button>
-              <button id="restartTraversal" class="btn btn--ghost">Restart traversal</button>
-            </div>
-            <div id="traversalFeedback" class="feedback"></div>
-          </div>
-
-          <div class="panel">
-            <h2>Traversal Graph</h2>
-            <p class="panel__hint">Click a highlighted state to move. Invalid moves will reset the pointer.</p>
-            <svg id="traverseBoard" class="automaton" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet"></svg>
-          </div>
+        <div class="concept-list">
+          <h3>&#x1F9E0; Key Concepts</h3>
+          <dl>
+            <dt>State</dt>
+            <dd>A node. Each state represents an equivalence class of substrings that end at the same set of positions in the original word.</dd>
+            <dt>Transition</dt>
+            <dd>A labelled directed edge. Following edge labelled&nbsp;<em>c</em> from state&nbsp;<em>u</em> means "I just read character&nbsp;<em>c</em>".</dd>
+            <dt>Suffix Link</dt>
+            <dd>A dashed edge from state&nbsp;<em>u</em> to the state representing the longest proper suffix of&nbsp;<em>u</em>'s equivalence class. Used to backtrack.</dd>
+            <dt>len(u)</dt>
+            <dd>The length of the <em>longest</em> string in state&nbsp;<em>u</em>'s equivalence class.</dd>
+          </dl>
         </div>
       </div>
     </section>
+
+    <!-- ===== SETUP ===== -->
+    <section class="content-box setup-box" aria-labelledby="setup-heading">
+      <h2 id="setup-heading">&#x2699;&#xFE0F; ENTER YOUR WORD!!!</h2>
+      <p>Type a short word (2&ndash;10 lowercase letters). We will build the DAWG for it step by step!</p>
+      <form class="setup-form" id="setupForm" novalidate>
+        <div class="form-row">
+          <label for="baseWordInput">Build DAWG for:</label>
+          <input id="baseWordInput" type="text" value="abbc" maxlength="12"
+                 autocomplete="off" autocorrect="off" spellcheck="false"
+                 aria-describedby="wordHint" />
+          <span id="wordHint" class="field-hint">lowercase letters only &mdash; max&nbsp;12</span>
+        </div>
+        <div class="form-row">
+          <label for="queryWordInput">Find LCS against:</label>
+          <input id="queryWordInput" type="text" value="bbc" maxlength="20"
+                 autocomplete="off" autocorrect="off" spellcheck="false"
+                 aria-describedby="queryHint" />
+          <span id="queryHint" class="field-hint">used in the traversal section below</span>
+        </div>
+        <div class="form-row">
+          <button type="submit" class="btn btn-go" id="goButton">
+            &#x1F680;&nbsp;GO!!!
+          </button>
+          <span id="setupError" class="error-msg" role="alert" aria-live="polite"></span>
+        </div>
+      </form>
+    </section>
+
+    <!-- ===== CONSTRUCTION ===== -->
+    <section class="content-box construct-box hidden" id="constructSection" aria-labelledby="construct-heading">
+      <h2 id="construct-heading">&#x1F528; STEP-BY-STEP CONSTRUCTION!!!</h2>
+      <p class="section-intro">
+        Tap <strong>Next&nbsp;&#9654;</strong> to walk through the algorithm one operation at a time.
+        <span class="legend-new">Blue&nbsp;border</span>&nbsp;= newly added this step.
+        <span class="legend-mod">Orange&nbsp;border</span>&nbsp;= modified this step.
+        Dashed arrows&nbsp;= suffix links.
+      </p>
+
+      <div class="viz-layout">
+        <div class="viz-graph-wrap">
+          <svg id="constructSvg" class="automaton-svg"
+               role="img" aria-labelledby="constructSvgTitle"></svg>
+        </div>
+        <div class="viz-explain">
+          <div class="step-counter" aria-live="polite" id="constructCounter">Step 0&nbsp;/&nbsp;0</div>
+          <div class="explain-box" id="constructExplain" aria-live="polite" aria-atomic="true">
+            <p>Press <strong>Next &#9654;</strong> to begin.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-bar">
+        <button class="btn btn-nav" id="cPrev" aria-label="Previous construction step">&#9664;&nbsp;Prev</button>
+        <div class="progress-wrap">
+          <div class="progress-fill" id="constructProgress" role="progressbar"
+               aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <button class="btn btn-nav btn-highlight" id="cNext" aria-label="Next construction step">Next&nbsp;&#9654;</button>
+      </div>
+
+      <details class="pseudocode-ref">
+        <summary>&#x1F4CB; Show full pseudocode</summary>
+        <pre><code id="pseudoFull">sa_extend(last, c):
+    cur      = new_state()
+    cur.len  = last.len + 1
+    p        = last
+    while p != NULL and p.next[c] is undefined:
+        p.next[c] = cur        # walk up, add transitions
+        p = p.link
+    if p == NULL:
+        cur.link = root        # no existing c-path found
+    else:
+        q = p.next[c]
+        if p.len + 1 == q.len:
+            cur.link = q       # q is already minimal
+        else:
+            clone        = copy(q)
+            clone.len    = p.len + 1
+            while p != NULL and p.next[c] == q:
+                p.next[c] = clone   # redirect existing paths
+                p = p.link
+            q.link   = clone
+            cur.link = clone
+    last = cur</code></pre>
+      </details>
+    </section>
+
+    <!-- ===== TRAVERSAL ===== -->
+    <section class="content-box traverse-box hidden" id="traverseSection" aria-labelledby="traverse-heading">
+      <h2 id="traverse-heading">&#x1F3C3; TRAVERSAL &amp; LCS!!!</h2>
+      <p class="section-intro">
+        We now walk the query word through the <em>completed</em> DAWG character by character.
+        At each step we either follow a transition directly, or backtrack up suffix links until
+        we can. The longest stretch without needing to reset is the <strong>Longest Common Substring</strong>.
+      </p>
+
+      <div class="viz-layout">
+        <div class="viz-graph-wrap">
+          <svg id="traverseSvg" class="automaton-svg"
+               role="img" aria-labelledby="traverseSvgTitle"></svg>
+        </div>
+        <div class="viz-explain">
+          <div class="step-counter" aria-live="polite" id="traverseCounter">Step 0&nbsp;/&nbsp;0</div>
+          <div class="word-track" id="wordTrack" aria-label="Query word character progress"></div>
+          <div class="explain-box" id="traverseExplain" aria-live="polite" aria-atomic="true">
+            <p>Press <strong>Next &#9654;</strong> to begin.</p>
+          </div>
+          <div class="lcs-display" aria-live="polite">
+            Current best LCS: <strong id="lcsValue">&mdash;</strong>
+            &nbsp;(length&nbsp;<span id="lcsLen">0</span>)
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-bar">
+        <button class="btn btn-nav" id="tPrev" aria-label="Previous traversal step">&#9664;&nbsp;Prev</button>
+        <div class="progress-wrap">
+          <div class="progress-fill" id="traverseProgress" role="progressbar"
+               aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <button class="btn btn-nav btn-highlight" id="tNext" aria-label="Next traversal step">Next&nbsp;&#9654;</button>
+      </div>
+    </section>
+
   </main>
+
+  <footer class="retro-footer" role="contentinfo">
+    <hr class="rainbow-hr" aria-hidden="true" />
+    <p>&#x1F4BB; Made with &#10084;&#65039;, "vibe coding", and beer &#x1F37A;</p>
+    <p><a href="../index.html">&#x2190; Back to the homepage!!!</a></p>
+  </footer>
 
   <script src="yo-dawg.js"></script>
 </body>

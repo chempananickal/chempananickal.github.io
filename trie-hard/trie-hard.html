@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trie Hard!! - Suffix Trie Explainer</title>
+  <link rel="stylesheet" href="trie-hard.css" />
+  <meta name="description" content="An interactive step-by-step explainer for the Suffix Trie (uncompressed suffix tree) construction and substring search algorithm." />
+</head>
+<body>
+
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle colour theme">&#x1F319; Dark</button>
+
+  <header class="retro-header" role="banner">
+    <div class="header-inner">
+      <div class="blink-badge" aria-hidden="true">&#9733; NEW!! &#9733;</div>
+      <h1 class="main-title">
+        <span class="title-trie">TRIE</span>&nbsp;<span class="title-hard">HARD!!!</span>
+      </h1>
+      <p class="tagline">&#x1F333; THE SUFFIX TRIE EXPLAINED!!!!</p>
+      <p class="subtagline">Learn how to build a Suffix Trie step by step and search it for substrings!!!!</p>
+      <div class="retro-meta" aria-hidden="true">
+        <span>&#127775; Works on ANY browser!!! &#127775;</span>
+        <span class="pipe">|</span>
+        <span>&#x1F6A7;&nbsp;Under Construction&nbsp;&#x1F6A7;</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-main">
+
+    <!-- ===== WHAT IS A TRIE? ===== -->
+    <section class="content-box intro-box" aria-labelledby="what-heading">
+      <h2 id="what-heading">&#x1F4D6; WHAT IS A TRIE???!</h2>
+      <div class="intro-grid">
+        <div class="intro-text">
+          <p>
+            A <strong>Trie</strong> (from &ldquo;re<strong>trie</strong>val&rdquo;, pronounced
+            &ldquo;try&rdquo;) is a tree where each path from the root to a node spells out a string.
+            Tries are also called <em>prefix trees</em>.
+          </p>
+          <p>
+            A <strong>Suffix Trie</strong> is built by inserting every suffix of a string&nbsp;<em>S</em>
+            into a single trie. The resulting structure can answer &ldquo;is&nbsp;<em>P</em> a
+            substring of&nbsp;<em>S</em>?&rdquo; in O(|P|) time &mdash; just walk from the root
+            following the characters of&nbsp;<em>P</em>.
+          </p>
+          <p>
+            The catch? A suffix trie has <strong>O(n&sup2;)</strong> nodes for a string of
+            length&nbsp;<em>n</em>. That memory cost motivated compressed suffix trees
+            (Patricia tries) and the even more compact
+            <a href="../yo-dawg/yo-dawg.html">Directed Acyclic Word Graph (DAWG)</a>.
+          </p>
+        </div>
+        <div class="concept-list">
+          <h3>&#x1F9E0; Key Concepts</h3>
+          <dl>
+            <dt>Trie Node</dt>
+            <dd>Each node represents one character on a path from the root. The root is the empty string.</dd>
+            <dt>Edge Label</dt>
+            <dd>Every edge carries exactly one character. Following a path from the root spells a string.</dd>
+            <dt>Suffix</dt>
+            <dd>A suffix of &ldquo;abc&rdquo; is any of: &ldquo;abc&rdquo;, &ldquo;bc&rdquo;, &ldquo;c&rdquo;.
+                A suffix trie inserts all of them.</dd>
+            <dt>Leaf Node</dt>
+            <dd>A node marked with a double ring &mdash; it signals the end of an inserted suffix.</dd>
+            <dt>Substring Search</dt>
+            <dd>To check if&nbsp;<em>P</em> is a substring of&nbsp;<em>S</em>, follow the characters
+                of&nbsp;<em>P</em> from the root. If every step succeeds, <em>P</em> is a substring!</dd>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SETUP ===== -->
+    <section class="content-box setup-box" aria-labelledby="setup-heading">
+      <h2 id="setup-heading">&#x2699;&#xFE0F; ENTER YOUR WORD!!!</h2>
+      <p>Type a short word (2&ndash;8 lowercase letters). We will build the Suffix Trie for it step by step!</p>
+      <form class="setup-form" id="setupForm" novalidate>
+        <div class="form-row">
+          <label for="baseWordInput">Build Trie for:</label>
+          <input id="baseWordInput" type="text" value="abbc" maxlength="8"
+                 autocomplete="off" autocorrect="off" spellcheck="false"
+                 aria-describedby="wordHint" />
+          <span id="wordHint" class="field-hint">lowercase letters only &mdash; max&nbsp;8</span>
+        </div>
+        <div class="form-row">
+          <label for="queryWordInput">Search for substring:</label>
+          <input id="queryWordInput" type="text" value="bb" maxlength="12"
+                 autocomplete="off" autocorrect="off" spellcheck="false"
+                 aria-describedby="queryHint" />
+          <span id="queryHint" class="field-hint">pattern to look up in the trie below</span>
+        </div>
+        <div class="form-row">
+          <button type="submit" class="btn btn-go" id="goButton">
+            &#x1F680;&nbsp;GO!!!
+          </button>
+          <span id="setupError" class="error-msg" role="alert" aria-live="polite"></span>
+        </div>
+      </form>
+    </section>
+
+    <!-- ===== CONSTRUCTION ===== -->
+    <section class="content-box construct-box hidden" id="constructSection" aria-labelledby="construct-heading">
+      <h2 id="construct-heading">&#x1F528; STEP-BY-STEP CONSTRUCTION!!!</h2>
+      <p class="section-intro">
+        Tap <strong>Next&nbsp;&#9654;</strong> to walk through the suffix insertions one step at a time.
+        <span class="legend-new">Blue border</span>&nbsp;= newly added this step.
+        <span class="legend-mod">Orange border</span>&nbsp;= active node on the current path.
+        <span class="trie-leaf-legend">Double circle</span>&nbsp;= leaf (end of a suffix).
+      </p>
+
+      <div class="viz-layout">
+        <div class="viz-graph-wrap">
+          <svg id="constructSvg" class="automaton-svg"
+               role="img" aria-label="Suffix trie construction diagram"></svg>
+        </div>
+        <div class="viz-explain">
+          <div class="step-counter" aria-live="polite" id="constructCounter">Step 0&nbsp;/&nbsp;0</div>
+          <div class="explain-box" id="constructExplain" aria-live="polite" aria-atomic="true">
+            <p>Press <strong>Next &#9654;</strong> to begin.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-bar">
+        <button class="btn btn-nav" id="cPrev" aria-label="Previous construction step">&#9664;&nbsp;Prev</button>
+        <div class="progress-wrap">
+          <div class="progress-fill" id="constructProgress" role="progressbar"
+               aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <button class="btn btn-nav btn-highlight" id="cNext" aria-label="Next construction step">Next&nbsp;&#9654;</button>
+      </div>
+
+      <details class="pseudocode-ref">
+        <summary>&#x1F4CB; Show pseudocode</summary>
+        <pre><code id="pseudoFull">trie_insert(root, suffix, suffix_index):
+    node = root
+    for each character c in suffix:
+        if node has no child labelled c:
+            create new child node for c
+        node = child labelled c
+    mark node as a leaf          # end of this suffix
+    record suffix_index at this leaf
+
+build_suffix_trie(S):
+    root = new_node()
+    for i = 0 to len(S) - 1:
+        trie_insert(root, S[i..], i)   # insert suffix starting at position i</code></pre>
+      </details>
+    </section>
+
+    <!-- ===== SEARCH ===== -->
+    <section class="content-box traverse-box hidden" id="traverseSection" aria-labelledby="traverse-heading">
+      <h2 id="traverse-heading">&#x1F50D; SUBSTRING SEARCH!!!</h2>
+      <p class="section-intro">
+        We now look up the query pattern in the <em>completed</em> trie, one character at a time.
+        If we can follow every character from the root, the pattern is a substring of the original word.
+        If we hit a dead end, it is not.
+      </p>
+
+      <div class="viz-layout">
+        <div class="viz-graph-wrap">
+          <svg id="traverseSvg" class="automaton-svg"
+               role="img" aria-label="Trie substring search diagram"></svg>
+        </div>
+        <div class="viz-explain">
+          <div class="step-counter" aria-live="polite" id="traverseCounter">Step 0&nbsp;/&nbsp;0</div>
+          <div class="word-track" id="wordTrack" aria-label="Pattern character progress"></div>
+          <div class="explain-box" id="traverseExplain" aria-live="polite" aria-atomic="true">
+            <p>Press <strong>Next &#9654;</strong> to begin.</p>
+          </div>
+          <div class="lcs-display" aria-live="polite">
+            Result: <strong id="searchStatus">&mdash;</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-bar">
+        <button class="btn btn-nav" id="tPrev" aria-label="Previous search step">&#9664;&nbsp;Prev</button>
+        <div class="progress-wrap">
+          <div class="progress-fill" id="traverseProgress" role="progressbar"
+               aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <button class="btn btn-nav btn-highlight" id="tNext" aria-label="Next search step">Next&nbsp;&#9654;</button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="retro-footer" role="contentinfo">
+    <hr class="rainbow-hr" aria-hidden="true" />
+    <p>&#x1F4BB; Made with &#10084;&#65039;, "vibe coding" and beer &#x1F37A;</p>
+    <p><a href="../yo-dawg/yo-dawg.html">&#x27A1; Try Yo&nbsp;DAWG for the compact, O(n) version!!!</a></p>
+    <p><a href="../index.html">&#x2190; Back to the homepage!!!</a></p>
+  </footer>
+
+  <script src="trie-hard.js"></script>
+</body>
+</html>
