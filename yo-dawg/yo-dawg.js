@@ -29,6 +29,10 @@ const lcsLen             = document.getElementById('lcsLen');
 const tPrev = document.getElementById('tPrev');
 const tNext = document.getElementById('tNext');
 
+const querySection = document.getElementById('querySection');
+const queryForm    = document.getElementById('queryForm');
+const queryError   = document.getElementById('queryError');
+
 // ── Module-level state ────────────────────────────────────────
 let cSteps = [], cIndex = 0, cPositions = {};
 let tSteps = [], tIndex = 0, tPositions = {};
@@ -517,37 +521,47 @@ function renderTraverse(i) {
 // ── SETUP HANDLER ─────────────────────────────────────────────
 setupForm.addEventListener('submit', (e) => {
   e.preventDefault();
-  const base  = sanitize(baseWordInput.value);
-  const query = sanitize(queryWordInput.value);
+  const base = sanitize(baseWordInput.value);
 
   if (base.length < 2) {
     setupError.textContent = 'Base word must be at least 2 letters.';
     return;
   }
-  if (query.length < 1) {
-    setupError.textContent = 'Query word must be at least 1 letter.';
-    return;
-  }
   setupError.textContent = '';
-
-  // Write back sanitized values
-  baseWordInput.value  = base;
-  queryWordInput.value = query;
+  baseWordInput.value = base;
 
   // ── Build construction ──
   const { steps, finalStates } = buildConstructSteps(base);
-  cSteps      = steps;
-  cIndex      = 0;
-  cPositions  = layoutPositions(finalStates);   // stable len-based layout
+  cSteps           = steps;
+  cIndex           = 0;
+  cPositions       = layoutPositions(finalStates);   // stable len-based layout
   savedFinalStates = finalStates;
 
+  // Reset traverse section in case of re-build
+  traverseSection.classList.add('hidden');
   constructSection.classList.remove('hidden');
+  querySection.classList.remove('hidden');
   renderConstruct(0);
 
+  constructSection.scrollIntoView({ behavior: 'smooth' });
+});
+
+// ── QUERY HANDLER ─────────────────────────────────────────────
+queryForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const query = sanitize(queryWordInput.value);
+
+  if (query.length < 1) {
+    queryError.textContent = 'Query must be at least 1 letter.';
+    return;
+  }
+  queryError.textContent = '';
+  queryWordInput.value = query;
+
   // ── Build traversal ──
-  tSteps     = buildTraverseSteps(query, finalStates);
+  tSteps     = buildTraverseSteps(query, savedFinalStates);
   tIndex     = 0;
-  tPositions = layoutPositions(finalStates);   // same layout for traversal
+  tPositions = layoutPositions(savedFinalStates);   // same layout for traversal
 
   // Populate word track
   wordTrack.innerHTML = query.split('').map(c => `<span>${c}</span>`).join('');
@@ -555,8 +569,7 @@ setupForm.addEventListener('submit', (e) => {
   traverseSection.classList.remove('hidden');
   renderTraverse(0);
 
-  // Scroll to construction
-  constructSection.scrollIntoView({ behavior: 'smooth' });
+  traverseSection.scrollIntoView({ behavior: 'smooth' });
 });
 
 // ── Navigation buttons ────────────────────────────────────────

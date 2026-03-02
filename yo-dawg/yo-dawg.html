@@ -82,13 +82,6 @@
           <span id="wordHint" class="field-hint">lowercase letters only &mdash; max&nbsp;12</span>
         </div>
         <div class="form-row">
-          <label for="queryWordInput">Find LCS against:</label>
-          <input id="queryWordInput" type="text" value="bbc" maxlength="20"
-                 autocomplete="off" autocorrect="off" spellcheck="false"
-                 aria-describedby="queryHint" />
-          <span id="queryHint" class="field-hint">used in the traversal section below</span>
-        </div>
-        <div class="form-row">
           <button type="submit" class="btn btn-go" id="goButton">
             &#x1F680;&nbsp;GO!!!
           </button>
@@ -154,6 +147,28 @@
             cur.link = clone
     last = cur</code></pre>
       </details>
+    </section>
+
+    <!-- ===== QUERY ===== -->
+    <section class="content-box setup-box hidden" id="querySection" aria-labelledby="query-heading">
+      <h2 id="query-heading">&#x1F50D; FIND THE LCS!!!</h2>
+      <p>The DAWG is built! Enter any query word to find its <strong>Longest Common Substring</strong>
+         with the original word &mdash; no rebuild needed, try as many queries as you like!</p>
+      <form class="setup-form" id="queryForm" novalidate>
+        <div class="form-row">
+          <label for="queryWordInput">Query word:</label>
+          <input id="queryWordInput" type="text" value="" maxlength="20"
+                 autocomplete="off" autocorrect="off" spellcheck="false"
+                 aria-describedby="queryHint" />
+          <span id="queryHint" class="field-hint">find LCS against the DAWG above</span>
+        </div>
+        <div class="form-row">
+          <button type="submit" class="btn btn-go" id="findButton">
+            &#x1F50E;&nbsp;FIND LCS!!!
+          </button>
+          <span id="queryError" class="error-msg" role="alert" aria-live="polite"></span>
+        </div>
+      </form>
     </section>
 
     <!-- ===== TRAVERSAL ===== -->

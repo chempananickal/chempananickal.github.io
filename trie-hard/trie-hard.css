@@ -471,6 +471,11 @@ dd { margin: 2px 0 0 16px; }
   color: #003300;
   border-color: #003300;
 }
+.word-track span.wt-match {
+  background: #cce8ff;
+  color: #001a44;
+  border-color: #0055cc;
+}
 
 /* ---------- result display ---------- */
 .lcs-display {
@@ -637,4 +642,9 @@ html.theme-dark .word-track span.wt-done {
 html.theme-dark .word-track span.wt-active {
   background: var(--hot);
   color: #000;
+}
+html.theme-dark .word-track span.wt-match {
+  background: #001a44;
+  color: #00ccff;
+  border-color: #0055cc;
 }

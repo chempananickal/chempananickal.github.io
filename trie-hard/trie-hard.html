@@ -85,13 +85,6 @@
           <span id="wordHint" class="field-hint">lowercase letters only &mdash; max&nbsp;8</span>
         </div>
         <div class="form-row">
-          <label for="queryWordInput">Search for substring:</label>
-          <input id="queryWordInput" type="text" value="bb" maxlength="12"
-                 autocomplete="off" autocorrect="off" spellcheck="false"
-                 aria-describedby="queryHint" />
-          <span id="queryHint" class="field-hint">pattern to look up in the trie below</span>
-        </div>
-        <div class="form-row">
           <button type="submit" class="btn btn-go" id="goButton">
             &#x1F680;&nbsp;GO!!!
           </button>
@@ -150,19 +143,45 @@ build_suffix_trie(S):
       </details>
     </section>
 
+    <!-- ===== QUERY ===== -->
+    <section class="content-box setup-box hidden" id="querySection" aria-labelledby="query-heading">
+      <h2 id="query-heading">&#x1F50D; FIND THE LCS!!!</h2>
+      <p>The trie is built! Enter any query word to find its <strong>Longest Common Substring</strong>
+         with the original word &mdash; no rebuild needed, try as many queries as you like!</p>
+      <form class="setup-form" id="queryForm" novalidate>
+        <div class="form-row">
+          <label for="queryWordInput">Query word:</label>
+          <input id="queryWordInput" type="text" value="" maxlength="12"
+                 autocomplete="off" autocorrect="off" spellcheck="false"
+                 aria-describedby="queryHint" />
+          <span id="queryHint" class="field-hint">find LCS against the trie above</span>
+        </div>
+        <div class="form-row">
+          <button type="submit" class="btn btn-go" id="findButton">
+            &#x1F50E;&nbsp;FIND LCS!!!
+          </button>
+          <span id="queryError" class="error-msg" role="alert" aria-live="polite"></span>
+        </div>
+      </form>
+    </section>
+
     <!-- ===== SEARCH ===== -->
     <section class="content-box traverse-box hidden" id="traverseSection" aria-labelledby="traverse-heading">
-      <h2 id="traverse-heading">&#x1F50D; SUBSTRING SEARCH!!!</h2>
+      <h2 id="traverse-heading">&#x1F9EC; LCS SEARCH!!!</h2>
       <p class="section-intro">
-        We now look up the query pattern in the <em>completed</em> trie, one character at a time.
-        If we can follow every character from the root, the pattern is a substring of the original word.
-        If we hit a dead end, it is not.
+        We now find the <strong>Longest Common Substring (LCS)</strong> between the query and the
+        original word by trying to match from <em>every</em> starting position of the query in the
+        trie. The longest run that succeeds is the LCS.
+        <span class="legend-new">Blue border</span>&nbsp;= active node.
+        <span class="legend-mod">Yellow highlight</span>&nbsp;= current character.
+        <span class="trie-leaf-legend">Blue highlight</span>&nbsp;= current matched run.
+        <span style="color:var(--progress-fill);font-weight:700;font-family:Arial,sans-serif">Green highlight</span>&nbsp;= best LCS span.
       </p>
 
       <div class="viz-layout">
         <div class="viz-graph-wrap">
           <svg id="traverseSvg" class="automaton-svg"
-               role="img" aria-label="Trie substring search diagram"></svg>
+               role="img" aria-label="Trie LCS search diagram"></svg>
         </div>
         <div class="viz-explain">
           <div class="step-counter" aria-live="polite" id="traverseCounter">Step 0&nbsp;/&nbsp;0</div>
@@ -171,18 +190,19 @@ build_suffix_trie(S):
             <p>Press <strong>Next &#9654;</strong> to begin.</p>
           </div>
           <div class="lcs-display" aria-live="polite">
-            Result: <strong id="searchStatus">&mdash;</strong>
+            Best LCS so far: <strong id="lcsValue">&mdash;</strong>
+            &nbsp;(length&nbsp;<span id="lcsLen">0</span>)
           </div>
         </div>
       </div>
 
       <div class="nav-bar">
-        <button class="btn btn-nav" id="tPrev" aria-label="Previous search step">&#9664;&nbsp;Prev</button>
+        <button class="btn btn-nav" id="tPrev" aria-label="Previous LCS step">&#9664;&nbsp;Prev</button>
         <div class="progress-wrap">
           <div class="progress-fill" id="traverseProgress" role="progressbar"
                aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
-        <button class="btn btn-nav btn-highlight" id="tNext" aria-label="Next search step">Next&nbsp;&#9654;</button>
+        <button class="btn btn-nav btn-highlight" id="tNext" aria-label="Next LCS step">Next&nbsp;&#9654;</button>
       </div>
     </section>
 

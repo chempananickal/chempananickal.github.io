@@ -24,9 +24,14 @@ const traverseCounter  = document.getElementById('traverseCounter');
 const traverseExplain  = document.getElementById('traverseExplain');
 const traverseProgress = document.getElementById('traverseProgress');
 const wordTrack        = document.getElementById('wordTrack');
-const searchStatus     = document.getElementById('searchStatus');
+const lcsValue         = document.getElementById('lcsValue');
+const lcsLen           = document.getElementById('lcsLen');
 const tPrev = document.getElementById('tPrev');
 const tNext = document.getElementById('tNext');
+
+const querySection = document.getElementById('querySection');
+const queryForm    = document.getElementById('queryForm');
+const queryError   = document.getElementById('queryError');
 
 // ── Module-level state ────────────────────────────────────────
 let cSteps = [], cIndex = 0, cPositions = {};
@@ -299,70 +304,95 @@ function buildTrieSteps(word) {
   return { steps, finalNodes: cloneArr(nodes) };
 }
 
-// ── BUILD SEARCH STEPS ────────────────────────────────────────
-function buildSearchSteps(pattern, nodes) {
+// ── BUILD LCS STEPS ────────────────────────────────────────────
+function buildLCSSteps(query, nodes) {
   const steps = [];
-  let cur = 0;
-  let foundSoFar = true;
+  let bestL = 0, bestEnd = -1;
 
   steps.push({
-    curNode: 0,
-    charIndex: -1,
-    found: null,
     hl: { curNode: 0 },
-    html: `<p>Searching for <strong>&ldquo;${pattern}&rdquo;</strong> in the suffix trie.</p>
-           <p>Start at <strong>root (node&nbsp;0)</strong> and try to follow each character
-           of the pattern in turn. If every step succeeds, the pattern is a substring of
-           the original word!</p>`,
+    charIndex: -1,
+    matchStart: -1, matchLen: 0,
+    bestL, bestEnd,
+    html: `<p>Finding the <strong>Longest Common Substring (LCS)</strong> between the query
+           <strong>&ldquo;${query}&rdquo;</strong> and the original word.</p>
+           <p>Strategy: try matching from every starting position in the query string.
+           The longest run that succeeds is the LCS.</p>
+           <p>This takes O(|query|&sup2;) time &mdash; contrast with the
+           <a href="../yo-dawg/yo-dawg.html">DAWG</a>, which does it in a single
+           O(|query|) pass using suffix links to backtrack without fully restarting.</p>`,
   });
 
-  for (let i = 0; i < pattern.length && foundSoFar; i++) {
-    const ch = pattern[i];
-    if (nodes[cur] && nodes[cur].children[ch] !== undefined) {
-      const prevCur = cur;
-      cur = nodes[cur].children[ch];
-      steps.push({
-        curNode: cur,
-        charIndex: i,
-        found: null,
-        hl: { curNode: cur, activeEdge: { from: prevCur, to: cur } },
-        html: `<p>Character <strong>&lsquo;${ch}&rsquo;</strong> (index&nbsp;${i}):
-               node&nbsp;${prevCur} has an edge labelled &lsquo;${ch}&rsquo;
-               to node&nbsp;${cur}. Follow it!</p>
-               <p>${i + 1 < pattern.length
-                 ? `${pattern.length - i - 1} character(s) remaining&hellip;`
-                 : 'That was the last character of the pattern.'}</p>`,
-      });
-    } else {
-      foundSoFar = false;
-      steps.push({
-        curNode: cur,
-        charIndex: i,
-        found: false,
-        hl: { curNode: cur },
-        html: `<p>Character <strong>&lsquo;${ch}&rsquo;</strong> (index&nbsp;${i}):
-               node&nbsp;${cur} has <strong>no edge labelled &lsquo;${ch}&rsquo;</strong>.
-               Dead end!</p>
-               <p>The pattern <strong>&ldquo;${pattern}&rdquo;</strong> is
-               <strong>not</strong> a substring of the original word.</p>`,
-      });
+  for (let qi = 0; qi < query.length; qi++) {
+    steps.push({
+      hl: { curNode: 0 },
+      charIndex: qi,
+      matchStart: qi, matchLen: 0,
+      bestL, bestEnd,
+      html: `<p>Attempt&nbsp;${qi + 1}&thinsp;/&thinsp;${query.length}:
+             start at query position&nbsp;${qi}
+             (<strong>&lsquo;${query[qi]}&rsquo;</strong>).</p>
+             <p>Reset to <strong>root (node&nbsp;0)</strong> and walk the trie as
+             far as possible from here.</p>`,
+    });
+
+    let cur = 0;
+    let matchLen = 0;
+
+    for (let ci = qi; ci < query.length; ci++) {
+      const ch = query[ci];
+      if (nodes[cur] && nodes[cur].children[ch] !== undefined) {
+        const prevCur = cur;
+        cur = nodes[cur].children[ch];
+        matchLen++;
+        const newBest = matchLen > bestL;
+        if (newBest) { bestL = matchLen; bestEnd = ci; }
+        steps.push({
+          hl: { curNode: cur, activeEdge: { from: prevCur, to: cur } },
+          charIndex: ci,
+          matchStart: qi, matchLen,
+          bestL, bestEnd,
+          html: `<p>Character <strong>&lsquo;${ch}&rsquo;</strong> (query index&nbsp;${ci}):
+                 followed edge to node&nbsp;${cur}.
+                 Match length so far:&nbsp;${matchLen}.</p>
+                 ${newBest
+                   ? `<p>&#x2B50; New best! LCS candidate:
+                      <strong>&ldquo;${query.slice(qi, qi + matchLen)}&rdquo;</strong>
+                      (length&nbsp;${matchLen}).</p>`
+                   : ''}`,
+        });
+      } else {
+        steps.push({
+          hl: { curNode: cur },
+          charIndex: ci,
+          matchStart: qi, matchLen,
+          bestL, bestEnd,
+          html: `<p>Character <strong>&lsquo;${ch}&rsquo;</strong> (query index&nbsp;${ci}):
+                 no edge labelled &lsquo;${ch}&rsquo; from node&nbsp;${cur}.
+                 Dead end after ${matchLen}&nbsp;character${matchLen !== 1 ? 's' : ''}.</p>
+                 <p>Move on to the next starting position.</p>`,
+        });
+        break;
+      }
     }
   }
 
-  if (foundSoFar) {
-    steps.push({
-      curNode: cur,
-      charIndex: pattern.length,
-      found: true,
-      hl: { curNode: cur },
-      html: `<p>&#x2705; <strong>Found!</strong> Every character of
-             <strong>&ldquo;${pattern}&rdquo;</strong> was matched without
-             hitting a dead end.</p>
-             <p>The pattern is a substring of the original word. The search took
-             exactly <strong>${pattern.length} step${pattern.length !== 1 ? 's' : ''}</strong>
-             &mdash; O(|pattern|) time, regardless of how long the original word was.</p>`,
-    });
-  }
+  const lcs = bestEnd >= 0 ? query.slice(bestEnd - bestL + 1, bestEnd + 1) : '';
+  steps.push({
+    hl: {},
+    charIndex: query.length,
+    matchStart: -1, matchLen: 0,
+    bestL, bestEnd,
+    html: `<p>&#x1F3C1; <strong>LCS search complete!</strong></p>
+           <p>The <strong>Longest Common Substring</strong> is
+           <strong>&ldquo;${lcs || '(none)'}&rdquo;</strong>
+           (length&nbsp;${bestL}).</p>
+           <p>We restarted from the root ${query.length}&nbsp;time${query.length !== 1 ? 's' : ''}
+           &mdash; O(|query|&sup2;) total work. A
+           <a href="../yo-dawg/yo-dawg.html">DAWG</a> finds the same answer
+           in a single O(|query|) pass, backtracking along suffix links
+           instead of restarting from scratch each time.</p>`,
+  });
 
   return steps;
 }
@@ -381,11 +411,12 @@ function renderConstruct(i) {
   cNext.disabled = i === total;
 }
 
-// ── RENDER SEARCH STEP ────────────────────────────────────────
+// ── RENDER LCS STEP ────────────────────────────────────────────
 function renderSearch(i) {
   tIndex = i;
   const step  = tSteps[i];
   const total = tSteps.length - 1;
+  const query = queryWordInput.value;
   renderGraph(traverseSvg, savedFinalNodes, cPositions, step.hl);
   traverseExplain.innerHTML = step.html;
   traverseCounter.textContent = `Step ${i}&nbsp;/&nbsp;${total}`;
@@ -394,35 +425,40 @@ function renderSearch(i) {
   tPrev.disabled = i === 0;
   tNext.disabled = i === total;
 
+  // Word track:
+  //   wt-active = character currently being tried
+  //   wt-match  = already-matched chars in the current attempt window
+  //   wt-done   = best LCS span (final step only)
+  const lcsStart = step.bestL > 0 ? step.bestEnd - step.bestL + 1 : -1;
+  const lcsEnd   = step.bestEnd;
   const chars = wordTrack.querySelectorAll('span');
   chars.forEach((span, idx) => {
-    span.className = idx < step.charIndex ? 'wt-done'
-                   : idx === step.charIndex ? 'wt-active'
-                   : '';
+    if (step.charIndex === query.length) {
+      span.className = (step.bestL > 0 && idx >= lcsStart && idx <= lcsEnd) ? 'wt-done' : '';
+    } else {
+      const inMatchWindow = step.matchStart >= 0 && idx >= step.matchStart && idx < step.charIndex;
+      span.className = idx === step.charIndex ? 'wt-active'
+                     : inMatchWindow         ? 'wt-match'
+                     : '';
+    }
   });
 
-  if (step.found === true)  searchStatus.textContent = '\u2705 Found \u2014 it IS a substring!';
-  else if (step.found === false) searchStatus.textContent = '\u274C Not found \u2014 not a substring!';
-  else searchStatus.textContent = '\u2014';
+  const lcs = step.bestL > 0 ? query.slice(lcsStart, lcsEnd + 1) : '';
+  lcsValue.textContent = lcs || '\u2014';
+  lcsLen.textContent   = step.bestL;
 }
 
 // ── SETUP HANDLER ─────────────────────────────────────────────
 setupForm.addEventListener('submit', e => {
   e.preventDefault();
-  const base  = sanitize(baseWordInput.value);
-  const query = sanitize(queryWordInput.value);
+  const base = sanitize(baseWordInput.value);
 
   if (base.length < 2) {
     setupError.textContent = 'Base word must be at least 2 letters.';
     return;
   }
-  if (query.length < 1) {
-    setupError.textContent = 'Search pattern must be at least 1 letter.';
-    return;
-  }
   setupError.textContent = '';
-  baseWordInput.value  = base;
-  queryWordInput.value = query;
+  baseWordInput.value = base;
 
   const { steps, finalNodes } = buildTrieSteps(base);
   cSteps          = steps;
@@ -430,17 +466,35 @@ setupForm.addEventListener('submit', e => {
   savedFinalNodes = finalNodes;
   cPositions      = computeLayout(finalNodes);
 
+  // Reset traverse section in case of re-build
+  traverseSection.classList.add('hidden');
   constructSection.classList.remove('hidden');
+  querySection.classList.remove('hidden');
   renderConstruct(0);
 
-  tSteps = buildSearchSteps(query, finalNodes);
+  constructSection.scrollIntoView({ behavior: 'smooth' });
+});
+
+// ── QUERY HANDLER ─────────────────────────────────────────────
+queryForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const query = sanitize(queryWordInput.value);
+
+  if (query.length < 1) {
+    queryError.textContent = 'Query must be at least 1 letter.';
+    return;
+  }
+  queryError.textContent = '';
+  queryWordInput.value = query;
+
+  tSteps = buildLCSSteps(query, savedFinalNodes);
   tIndex = 0;
 
   wordTrack.innerHTML = query.split('').map(c => `<span>${c}</span>`).join('');
   traverseSection.classList.remove('hidden');
   renderSearch(0);
 
-  constructSection.scrollIntoView({ behavior: 'smooth' });
+  traverseSection.scrollIntoView({ behavior: 'smooth' });
 });
 
 // ── Navigation buttons ────────────────────────────────────────
