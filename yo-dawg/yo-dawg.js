@@ -485,6 +485,13 @@ function renderConstruct(i) {
   constructProgress.setAttribute('aria-valuenow', Math.round((i / total) * 100));
   cPrev.disabled = i === 0;
   cNext.disabled = i === total;
+
+  // Reveal the query section only once construction is complete
+  if (step.done) {
+    querySection.classList.remove('hidden');
+  } else {
+    querySection.classList.add('hidden');
+  }
 }
 
 // ── RENDER TRAVERSAL STEP ─────────────────────────────────────
@@ -539,8 +546,8 @@ setupForm.addEventListener('submit', (e) => {
 
   // Reset traverse section in case of re-build
   traverseSection.classList.add('hidden');
+  querySection.classList.add('hidden');
   constructSection.classList.remove('hidden');
-  querySection.classList.remove('hidden');
   renderConstruct(0);
 
   constructSection.scrollIntoView({ behavior: 'smooth' });
