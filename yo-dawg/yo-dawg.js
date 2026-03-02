@@ -118,33 +118,78 @@ function drawArrow(p1, p2, R, lineClass, markerId, label, curveDir) {
 
 // ── Dynamic edge-curve computation ──────────────────────────
 // Assigns a perpendicular offset (curveDir) to every transition arc and
-// suffix-link arc so parallel edges spread out without ever crossing.
+// suffix-link arc so that:
+//   1. Parallel arcs between the same node-pair spread without crossing.
+//   2. Every arc bows away from intermediate nodes it would otherwise pass
+//      through, by sampling the actual quadratic bezier and nudging.
 //
-// Convention (matches drawArrow): positive curveDir bows the arc downward
-// (in SVG-y terms); negative bows it upward.
+// Convention (matches drawArrow): positive curveDir bows the arc downward;
+// negative bows it upward.
 //
-// Strategy:
-//   • Right-going (A.x < B.x) arcs bow UPWARD  → negative values, starting
-//     at -MIN_CURVE and stepping by -lw for each additional parallel arc.
-//   • Left-going arcs bow DOWNWARD → positive values, same stepping rule.
-//   • Since the two directions are on opposite sides of the A-B line, they
-//     cannot interfere with each other — no special bidir hack needed.
-//   • Suffix links look up the outermost transition on the SAME side of the
-//     pair and push LINK_EXTRA px further out.  When no transitions share the
-//     pair, the arc bows by a fraction of the inter-node distance.
+// Transitions: right-going → bow UP (negative); left-going → bow DOWN (positive).
+// Suffix links: placed on the OPPOSITE side from same-pair transitions; when
+//   no transitions share the pair they use a distance-scaled bow instead.
 function computeEdgeCurves(positions, transMap, linkEdges) {
+  const R_NODE         = 22;   // must match renderGraph's R
+  const NODE_CLEARANCE = R_NODE + 10;  // required clearance from arc to any non-endpoint node centre
+  const NUDGE_STEP     = 12;   // px to increase offset per iteration
+  const MAX_NUDGES     = 40;   // safety cap on iterations
+
   const MIN_CURVE  = 26;   // minimum bow for a single isolated arc (px)
-  const LANE_FRAC  = 0.22; // lane width as fraction of pixel distance
+  const LANE_FRAC  = 0.22; // lane width as fraction of inter-node pixel distance
   const MIN_LANE   = 42;   // floor for lane width (px)
-  const LINK_EXTRA = 40;   // gap beyond the outermost same-side transition
-  const LINK_FRAC  = 0.40; // fallback arc fraction for links with no co-transitions
-  const LINK_MAX   = 115;  // cap on the fallback arc (px)
+  const LINK_EXTRA = 44;   // gap beyond outermost same-side transition for a suffix link
+  const LINK_FRAC  = 0.40; // fallback arc fraction when no co-transitions exist
+  const LINK_MAX   = 115;  // cap on that fallback arc (px)
 
   const curves    = {};  // edgeKey → curveDir
-  const outermost = {};  // `${minId}-${maxId}` → { right: 0, left: 0 }
+  const outermost = {};  // `${minId}-${maxId}` → { pos: 0, neg: 0 }  (max magnitude per sign-side)
 
   const pairKey    = (a, b) => `${Math.min(a, b)}-${Math.max(a, b)}`;
-  const ensurePair = pk  => { if (!outermost[pk]) outermost[pk] = { right: 0, left: 0 }; };
+  const ensurePair = pk => { if (!outermost[pk]) outermost[pk] = { pos: 0, neg: 0 }; };
+  const trackOuter = (pk, val) => {
+    if (val >= 0) outermost[pk].pos = Math.max(outermost[pk].pos,  val);
+    else          outermost[pk].neg = Math.max(outermost[pk].neg, -val);
+  };
+
+  // All node positions for intersection checking (built once).
+  const allPositions = Object.entries(positions).map(([id, pos]) => ({ id: Number(id), pos }));
+
+  // ── Sample a quadratic bezier (centred on node-centres) at `samples` points
+  //    and return the minimum distance from point q to the curve.
+  function minBezierDist(p1, p2, cpOff, q, samples = 32) {
+    const dx = p2.x - p1.x, dy = p2.y - p1.y, d = Math.hypot(dx, dy) || 1;
+    const nx = dx / d, ny = dy / d;
+    // Control point: midpoint shifted perpendicularly by cpOff.
+    const mx = (p1.x + p2.x) / 2 - ny * cpOff;
+    const my = (p1.y + p2.y) / 2 + nx * cpOff;
+    let minD = Infinity;
+    for (let i = 0; i <= samples; i++) {
+      const t = i / samples, u = 1 - t;
+      const bx = u*u*p1.x + 2*t*u*mx + t*t*p2.x;
+      const by = u*u*p1.y + 2*t*u*my + t*t*p2.y;
+      const dist = Math.hypot(bx - q.x, by - q.y);
+      if (dist < minD) minD = dist;
+    }
+    return minD;
+  }
+
+  // ── Starting from `initOffset`, nudge its magnitude outward (preserving sign)
+  //    until the bezier from p1→p2 clears all nodes except fromId and toId.
+  function nudgeForNodes(p1, p2, fromId, toId, initOffset) {
+    let off  = initOffset;
+    const sign = off >= 0 ? 1 : -1;
+    for (let iter = 0; iter < MAX_NUDGES; iter++) {
+      let blocked = false;
+      for (const { id, pos } of allPositions) {
+        if (id === fromId || id === toId) continue;
+        if (minBezierDist(p1, p2, off, pos) < NODE_CLEARANCE) { blocked = true; break; }
+      }
+      if (!blocked) break;
+      off += sign * NUDGE_STEP;
+    }
+    return off;
+  }
 
   // ── Pass 1: transitions ──
   for (const { from, to, chs } of Object.values(transMap)) {
@@ -157,27 +202,33 @@ function computeEdgeCurves(positions, transMap, linkEdges) {
     ensurePair(pk);
 
     [...chs].sort().forEach((ch, i) => {
-      const outward = MIN_CURVE + i * lw;
-      curves[`${from}\u2192${to}\u2192${ch}`] = goRight ? -outward : outward;
+      const raw    = MIN_CURVE + i * lw;
+      const sign   = goRight ? -1 : 1;
+      const nudged = nudgeForNodes(p1, p2, from, to, sign * raw);
+      curves[`${from}\u2192${to}\u2192${ch}`] = nudged;
+      trackOuter(pk, nudged);
     });
-
-    const maxOutward = MIN_CURVE + (chs.length - 1) * lw;
-    if (goRight) outermost[pk].right = Math.max(outermost[pk].right, maxOutward);
-    else         outermost[pk].left  = Math.max(outermost[pk].left,  maxOutward);
   }
 
   // ── Pass 2: suffix links ──
+  // Suffix links are placed on the OPPOSITE sign-side from same-pair transitions.
   for (const { from, to } of linkEdges) {
     const p1 = positions[from], p2 = positions[to];
     if (!p1 || !p2) continue;
     const dist    = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1;
     const goRight = p2.x >= p1.x;
     const pk      = pairKey(from, to);
-    const outer   = outermost[pk] ? (goRight ? outermost[pk].right : outermost[pk].left) : 0;
-    const outward = outer > 0
-      ? outer + LINK_EXTRA
+    // Transitions on this edge go right → negative offset; suffix link → use positive side.
+    // Transitions go left → positive offset; suffix link → use negative side.
+    const linkSign   = goRight ? 1 : -1;
+    const oppSideMax = goRight
+      ? (outermost[pk] ? outermost[pk].pos : 0)   // transitions are neg, link goes pos
+      : (outermost[pk] ? outermost[pk].neg : 0);  // transitions are pos, link goes neg
+    const base    = oppSideMax > 0
+      ? oppSideMax + LINK_EXTRA
       : Math.min(Math.max(MIN_CURVE, dist * LINK_FRAC), LINK_MAX);
-    curves[`link:${from}\u2192${to}`] = goRight ? -outward : outward;
+    const nudged  = nudgeForNodes(p1, p2, from, to, linkSign * base);
+    curves[`link:${from}\u2192${to}`] = nudged;
   }
 
   return curves;
