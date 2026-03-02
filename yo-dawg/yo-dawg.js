@@ -116,6 +116,73 @@ function drawArrow(p1, p2, R, lineClass, markerId, label, curveDir) {
   return gml;
 }
 
+// ── Dynamic edge-curve computation ──────────────────────────
+// Assigns a perpendicular offset (curveDir) to every transition arc and
+// suffix-link arc so parallel edges spread out without ever crossing.
+//
+// Convention (matches drawArrow): positive curveDir bows the arc downward
+// (in SVG-y terms); negative bows it upward.
+//
+// Strategy:
+//   • Right-going (A.x < B.x) arcs bow UPWARD  → negative values, starting
+//     at -MIN_CURVE and stepping by -lw for each additional parallel arc.
+//   • Left-going arcs bow DOWNWARD → positive values, same stepping rule.
+//   • Since the two directions are on opposite sides of the A-B line, they
+//     cannot interfere with each other — no special bidir hack needed.
+//   • Suffix links look up the outermost transition on the SAME side of the
+//     pair and push LINK_EXTRA px further out.  When no transitions share the
+//     pair, the arc bows by a fraction of the inter-node distance.
+function computeEdgeCurves(positions, transMap, linkEdges) {
+  const MIN_CURVE  = 26;   // minimum bow for a single isolated arc (px)
+  const LANE_FRAC  = 0.22; // lane width as fraction of pixel distance
+  const MIN_LANE   = 42;   // floor for lane width (px)
+  const LINK_EXTRA = 40;   // gap beyond the outermost same-side transition
+  const LINK_FRAC  = 0.40; // fallback arc fraction for links with no co-transitions
+  const LINK_MAX   = 115;  // cap on the fallback arc (px)
+
+  const curves    = {};  // edgeKey → curveDir
+  const outermost = {};  // `${minId}-${maxId}` → { right: 0, left: 0 }
+
+  const pairKey    = (a, b) => `${Math.min(a, b)}-${Math.max(a, b)}`;
+  const ensurePair = pk  => { if (!outermost[pk]) outermost[pk] = { right: 0, left: 0 }; };
+
+  // ── Pass 1: transitions ──
+  for (const { from, to, chs } of Object.values(transMap)) {
+    const p1 = positions[from], p2 = positions[to];
+    if (!p1 || !p2) continue;
+    const dist    = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1;
+    const lw      = Math.max(MIN_LANE, dist * LANE_FRAC);
+    const goRight = p2.x >= p1.x;
+    const pk      = pairKey(from, to);
+    ensurePair(pk);
+
+    [...chs].sort().forEach((ch, i) => {
+      const outward = MIN_CURVE + i * lw;
+      curves[`${from}\u2192${to}\u2192${ch}`] = goRight ? -outward : outward;
+    });
+
+    const maxOutward = MIN_CURVE + (chs.length - 1) * lw;
+    if (goRight) outermost[pk].right = Math.max(outermost[pk].right, maxOutward);
+    else         outermost[pk].left  = Math.max(outermost[pk].left,  maxOutward);
+  }
+
+  // ── Pass 2: suffix links ──
+  for (const { from, to } of linkEdges) {
+    const p1 = positions[from], p2 = positions[to];
+    if (!p1 || !p2) continue;
+    const dist    = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1;
+    const goRight = p2.x >= p1.x;
+    const pk      = pairKey(from, to);
+    const outer   = outermost[pk] ? (goRight ? outermost[pk].right : outermost[pk].left) : 0;
+    const outward = outer > 0
+      ? outer + LINK_EXTRA
+      : Math.min(Math.max(MIN_CURVE, dist * LINK_FRAC), LINK_MAX);
+    curves[`link:${from}\u2192${to}`] = goRight ? -outward : outward;
+  }
+
+  return curves;
+}
+
 // ── Render the automaton graph into an SVG element ────────────
 function renderGraph(svgEl, states, positions, hl = {}) {
   const { newStates = [], modStates = [], curState = -1,
@@ -155,54 +222,35 @@ function renderGraph(svgEl, states, positions, hl = {}) {
       (transMap[key] = transMap[key] || { from: s.id, to, chs: [] }).chs.push(ch);
     });
   });
-  const transPairs = new Set(Object.keys(transMap));
-  const hasReverse = (f, t) => transPairs.has(`${t}\u2192${f}`);
-
   // ── Collect suffix links ──
   const linkEdges = [];
   states.forEach(s => {
     if (s.link === -1 || !positions[s.id] || !positions[s.link]) return;
     linkEdges.push({ from: s.id, to: s.link });
   });
-  const linkPairs = new Set(linkEdges.map(e => `${e.from}\u2192${e.to}`));
-  const sharedPair = (f, t) =>
-    linkPairs.has(`${f}\u2192${t}`) || linkPairs.has(`${t}\u2192${f}`);
+
+  // ── Pre-compute all curve offsets dynamically ──
+  const edgeCurves = computeEdgeCurves(positions, transMap, linkEdges);
 
   // ── Draw suffix links first (underneath transitions) ──
   linkEdges.forEach(e => {
-    const p1 = positions[e.from], p2 = positions[e.to];
-    const dist    = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-    const goRight = p2.x >= p1.x;
-    // Arc scales with pixel distance so long-range links bow well clear of nodes.
-    const base = Math.max(65, Math.min(dist * 0.45, 120));
-    let curve = goRight ? base : -base;
-    // Shares the same node-pair with a transition → push even further below.
-    if (sharedPair(e.from, e.to)) curve += goRight ? 30 : -30;
+    const p1   = positions[e.from], p2 = positions[e.to];
+    const curve = edgeCurves[`link:${e.from}\u2192${e.to}`] ?? 60;
     const enew = hlEdge(newEdges, e.from, e.to);
     const emod = hlEdge(modEdges, e.from, e.to);
-    const cls = enew ? 's-slink new' : emod ? 's-slink mod' : 's-slink';
-    const mid = enew ? 'ah-new' : emod ? 'ah-mod' : 'ah-lnk';
+    const cls  = enew ? 's-slink new' : emod ? 's-slink mod' : 's-slink';
+    const mid  = enew ? 'ah-new' : emod ? 'ah-mod' : 'ah-lnk';
     mk += drawArrow(p1, p2, R, cls, mid, null, curve);
   });
 
   // ── Draw transitions ──
   Object.values(transMap).forEach(({ from, to, chs }) => {
-    const p1      = positions[from], p2 = positions[to];
-    const n       = chs.length;
-    const goRight = p2.x >= p1.x;
-    const bidir   = hasReverse(from, to);
-    // Larger base offset when bidirectional so both directions sit clear of each other.
-    let baseCurve = goRight ? -25 : 25;
-    if (bidir) baseCurve = goRight ? -48 : 48;
-
-    const sortedChs = [...chs].sort();
-    sortedChs.forEach((ch, i) => {
-      // Spread = 48 px per lane so adjacent arcs never cross.
-      const spread = n > 1 ? (i - (n - 1) / 2) * 48 : 0;
-      const curve  = baseCurve + spread;
+    const p1 = positions[from], p2 = positions[to];
+    [...chs].sort().forEach(ch => {
+      const curve    = edgeCurves[`${from}\u2192${to}\u2192${ch}`] ?? -26;
       const isActive = activeEdge && activeEdge.from === from && activeEdge.to === to;
-      const enew = hlEdge(newEdges, from, to, ch);
-      const emod = hlEdge(modEdges, from, to, ch);
+      const enew     = hlEdge(newEdges, from, to, ch);
+      const emod     = hlEdge(modEdges, from, to, ch);
       const cls  = isActive ? 's-edge active-trav' : enew ? 's-edge new' : emod ? 's-edge mod' : 's-edge';
       const mid  = isActive ? 'ah-hot' : enew ? 'ah-new' : emod ? 'ah-mod' : 'ah';
       mk += drawArrow(p1, p2, R, cls, mid, ch, curve);
