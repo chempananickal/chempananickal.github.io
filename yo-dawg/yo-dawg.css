@@ -722,3 +722,9 @@ html.theme-dark .word-track span.wt-active {
   background: var(--hot);
   color: #000;
 }
+
+
+.bottom-image {
+  display: block;
+  margin: 2rem auto;
+}
