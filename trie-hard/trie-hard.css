@@ -322,14 +322,50 @@ dd { margin: 2px 0 0 16px; }
 .viz-graph-wrap {
   background: var(--svg-bg);
   border: 3px solid var(--border);
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
+  position: relative;
+  aspect-ratio: 16 / 9;
 }
 .automaton-svg {
   display: block;
-  min-width: 280px;
-  height: 240px;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.fit-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  line-height: 1;
+  background: var(--btn-bg);
+  color: var(--text);
+  border: 2px solid var(--border);
+  opacity: 0.55;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0;
+  transition: opacity 0.15s;
+  z-index: 10;
+}
+.fit-btn:hover, .fit-btn:focus-visible { opacity: 1; outline: 2px solid var(--hot); }
+
+.zoom-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-family: "Courier New", monospace;
+  margin: 0 0 12px;
+  opacity: 0.8;
 }
 
 /* SVG node styles */

@@ -75,11 +75,11 @@
     <!-- ===== SETUP ===== -->
     <section class="content-box setup-box" aria-labelledby="setup-heading">
       <h2 id="setup-heading">&#x2699;&#xFE0F; ENTER YOUR WORD!!!</h2>
-      <p>Type a short word (2&ndash;8 lowercase letters). We will build the Suffix Trie for it step by step!</p>
+      <p>Type a short word (2&ndash;25 lowercase letters). We will build the Suffix Trie for it step by step!</p>
       <form class="setup-form" id="setupForm" novalidate>
         <div class="form-row">
           <label for="baseWordInput">Build Trie for:</label>
-          <input id="baseWordInput" type="text" value="abbc" maxlength="25"
+          <input id="baseWordInput" type="text" placeholder="e.g. tomato" maxlength="25"
                  autocomplete="off" autocorrect="off" spellcheck="false"
                  aria-describedby="wordHint" />
           <span id="wordHint" class="field-hint">lowercase letters only &mdash; max&nbsp;25</span>
@@ -102,11 +102,13 @@
         <span class="legend-mod">Orange border</span>&nbsp;= active node on the current path.
         <span class="trie-leaf-legend">Double circle</span>&nbsp;= leaf (end of a suffix).
       </p>
+      <p class="zoom-hint">&#128270; Pinch or Ctrl+scroll to zoom &middot; drag to pan &middot; use &#x2922; to fit</p>
 
       <div class="viz-layout">
         <div class="viz-graph-wrap">
           <svg id="constructSvg" class="automaton-svg"
                role="img" aria-label="Suffix trie construction diagram"></svg>
+          <button class="fit-btn" id="cFit" aria-label="Fit graph to view" title="Zoom to fit all nodes">&#x2922;</button>
         </div>
         <div class="viz-explain">
           <div class="step-counter" aria-live="polite" id="constructCounter">Step 0&nbsp;/&nbsp;0</div>
@@ -177,11 +179,13 @@ build_suffix_trie(S):
         <span class="trie-leaf-legend">Blue highlight</span>&nbsp;= current matched run.
         <span style="color:var(--progress-fill);font-weight:700;font-family:Arial,sans-serif">Green highlight</span>&nbsp;= best LCS span.
       </p>
+      <p class="zoom-hint">&#128270; Pinch or Ctrl+scroll to zoom &middot; drag to pan &middot; use &#x2922; to fit</p>
 
       <div class="viz-layout">
         <div class="viz-graph-wrap">
           <svg id="traverseSvg" class="automaton-svg"
                role="img" aria-label="Trie LCS search diagram"></svg>
+          <button class="fit-btn" id="tFit" aria-label="Fit graph to view" title="Zoom to fit all nodes">&#x2922;</button>
         </div>
         <div class="viz-explain">
           <div class="step-counter" aria-live="polite" id="traverseCounter">Step 0&nbsp;/&nbsp;0</div>

@@ -72,11 +72,11 @@
     <!-- ===== SETUP ===== -->
     <section class="content-box setup-box" aria-labelledby="setup-heading">
       <h2 id="setup-heading">&#x2699;&#xFE0F; ENTER YOUR WORD!!!</h2>
-      <p>Type a short word (2&ndash;10 lowercase letters). We will build the DAWG for it step by step!</p>
+      <p>Type a short word (2&ndash;25 lowercase letters). We will build the DAWG for it step by step!</p>
       <form class="setup-form" id="setupForm" novalidate>
         <div class="form-row">
           <label for="baseWordInput">Build DAWG for:</label>
-          <input id="baseWordInput" type="text" value="abbc" maxlength="25"
+          <input id="baseWordInput" type="text" placeholder="e.g. tomato" maxlength="25"
                  autocomplete="off" autocorrect="off" spellcheck="false"
                  aria-describedby="wordHint" />
           <span id="wordHint" class="field-hint">lowercase letters only &mdash; max&nbsp;25</span>
@@ -99,11 +99,13 @@
         <span class="legend-mod">Orange&nbsp;border</span>&nbsp;= modified this step.
         Dashed arrows&nbsp;= suffix links.
       </p>
+      <p class="zoom-hint">&#128270; Pinch or Ctrl+scroll to zoom &middot; drag to pan &middot; use &#x2922; to fit</p>
 
       <div class="viz-layout">
         <div class="viz-graph-wrap">
           <svg id="constructSvg" class="automaton-svg"
                role="img" aria-labelledby="constructSvgTitle"></svg>
+          <button class="fit-btn" id="cFit" aria-label="Fit graph to view" title="Zoom to fit all nodes">&#x2922;</button>
         </div>
         <div class="viz-explain">
           <div class="step-counter" aria-live="polite" id="constructCounter">Step 0&nbsp;/&nbsp;0</div>
@@ -179,11 +181,13 @@
         At each step we either follow a transition directly, or backtrack up suffix links until
         we can. The longest stretch without needing to reset is the <strong>Longest Common Substring</strong>.
       </p>
+      <p class="zoom-hint">&#128270; Pinch or Ctrl+scroll to zoom &middot; drag to pan &middot; use &#x2922; to fit</p>
 
       <div class="viz-layout">
         <div class="viz-graph-wrap">
           <svg id="traverseSvg" class="automaton-svg"
                role="img" aria-labelledby="traverseSvgTitle"></svg>
+          <button class="fit-btn" id="tFit" aria-label="Fit graph to view" title="Zoom to fit all nodes">&#x2922;</button>
         </div>
         <div class="viz-explain">
           <div class="step-counter" aria-live="polite" id="traverseCounter">Step 0&nbsp;/&nbsp;0</div>

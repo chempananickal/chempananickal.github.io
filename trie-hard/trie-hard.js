@@ -32,6 +32,8 @@ const tNext = document.getElementById('tNext');
 const querySection = document.getElementById('querySection');
 const queryForm    = document.getElementById('queryForm');
 const queryError   = document.getElementById('queryError');
+const cFit         = document.getElementById('cFit');
+const tFit         = document.getElementById('tFit');
 
 // ── Module-level state ────────────────────────────────────────
 let cSteps = [], cIndex = 0, cPositions = {};
@@ -100,6 +102,130 @@ function svgDimensionsFromPositions(positions) {
   };
 }
 
+// ── Zoom/pan viewport controller ──────────────────────────────
+class ViewportController {
+  constructor(svgEl, fitBtn) {
+    this.svg  = svgEl;
+    this._tx  = 0;
+    this._ty  = 0;
+    this._s   = 1;
+    this._cw  = 300;
+    this._ch  = 200;
+    this._setupEvents(fitBtn);
+  }
+
+  _g() { return this.svg.querySelector('.content-g'); }
+
+  _apply() {
+    const g = this._g();
+    if (g) g.setAttribute('transform',
+      `translate(${this._tx.toFixed(2)},${this._ty.toFixed(2)}) scale(${this._s.toFixed(5)})`);
+  }
+
+  autoFit(cw, ch) {
+    this._cw = cw;
+    this._ch = ch;
+    const { width: sw, height: sh } = this.svg.getBoundingClientRect();
+    if (!sw || !sh) return;
+    const pad = 20;
+    const s   = Math.min((sw - pad * 2) / cw, (sh - pad * 2) / ch);
+    this._s   = Math.max(0.05, s);
+    this._tx  = (sw - cw * this._s) / 2;
+    this._ty  = (sh - ch * this._s) / 2;
+    this._apply();
+  }
+
+  _zoom(f, cx, cy) {
+    const ns = Math.max(0.05, Math.min(20, this._s * f));
+    const fr = ns / this._s;
+    this._tx = cx + (this._tx - cx) * fr;
+    this._ty = cy + (this._ty - cy) * fr;
+    this._s  = ns;
+    this._apply();
+  }
+
+  _setupEvents(fitBtn) {
+    const svg = this.svg;
+    if (fitBtn) fitBtn.addEventListener('click', () => this.autoFit(this._cw, this._ch));
+
+    svg.addEventListener('wheel', e => {
+      e.preventDefault();
+      const r = svg.getBoundingClientRect();
+      if (e.ctrlKey || e.metaKey) {
+        this._zoom(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX - r.left, e.clientY - r.top);
+      } else {
+        const m = e.deltaMode === 1 ? 20 : 1;
+        this._tx -= e.deltaX * m;
+        this._ty -= e.deltaY * m;
+        this._apply();
+      }
+    }, { passive: false });
+
+    let drag = false, lastX = 0, lastY = 0;
+    svg.addEventListener('mousedown', e => {
+      if (e.button !== 0) return;
+      drag = true; lastX = e.clientX; lastY = e.clientY;
+      svg.style.cursor = 'grabbing';
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', e => {
+      if (!drag) return;
+      this._tx += e.clientX - lastX;
+      this._ty += e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
+      this._apply();
+    });
+    window.addEventListener('mouseup', () => {
+      drag = false; svg.style.cursor = 'grab';
+    });
+
+    let lastT = null;
+    svg.addEventListener('touchstart', e => {
+      e.preventDefault();
+      lastT = [...e.touches].map(t => ({ x: t.clientX, y: t.clientY }));
+    }, { passive: false });
+    svg.addEventListener('touchmove', e => {
+      e.preventDefault();
+      const t = [...e.touches].map(t => ({ x: t.clientX, y: t.clientY }));
+      if (!lastT) { lastT = t; return; }
+      const r = svg.getBoundingClientRect();
+      if (t.length >= 2 && lastT.length >= 2) {
+        const d0  = Math.hypot(lastT[1].x - lastT[0].x, lastT[1].y - lastT[0].y);
+        const d1  = Math.hypot(t[1].x - t[0].x, t[1].y - t[0].y);
+        const lmx = (lastT[0].x + lastT[1].x) / 2 - r.left;
+        const lmy = (lastT[0].y + lastT[1].y) / 2 - r.top;
+        const mx  = (t[0].x + t[1].x) / 2 - r.left;
+        const my  = (t[0].y + t[1].y) / 2 - r.top;
+        if (d0 > 1) {
+          const f  = d1 / d0;
+          const ns = Math.max(0.05, Math.min(20, this._s * f));
+          const fr = ns / this._s;
+          this._tx = mx + (this._tx - lmx) * fr;
+          this._ty = my + (this._ty - lmy) * fr;
+          this._s  = ns;
+        } else {
+          this._tx += mx - lmx;
+          this._ty += my - lmy;
+        }
+        this._apply();
+      } else if (t.length === 1) {
+        this._tx += t[0].x - lastT[0].x;
+        this._ty += t[0].y - lastT[0].y;
+        this._apply();
+      }
+      lastT = t;
+    }, { passive: false });
+    svg.addEventListener('touchend', e => {
+      lastT = [...e.touches].map(t => ({ x: t.clientX, y: t.clientY }));
+    }, { passive: false });
+
+    window.addEventListener('resize', () => this.autoFit(this._cw, this._ch));
+  }
+}
+
+const cViewport = new ViewportController(constructSvg, cFit);
+const tViewport = new ViewportController(traverseSvg, tFit);
+
 // ── Draw a straight arrow between two node centres ────────────
 function drawArrow(p1, p2, R, lineClass, markerId, label) {
   const dx   = p2.x - p1.x, dy = p2.y - p1.y;
@@ -136,12 +262,9 @@ function renderGraph(svgEl, nodes, positions, hl = {}) {
   for (const n of nodes) {
     if (positions[n.id]) visiblePos[n.id] = positions[n.id];
   }
-  if (!Object.keys(visiblePos).length) return;
+  if (!Object.keys(visiblePos).length) return { w: 300, h: 180 };
 
   const { w, h } = svgDimensionsFromPositions(visiblePos);
-  svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
-  svgEl.style.width  = `${w}px`;
-  svgEl.style.height = `${h}px`;
 
   let mk = `<defs>
     <marker id="ah"     viewBox="0 0 10 7" markerWidth="7" markerHeight="5" refX="8" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7"/></marker>
@@ -189,7 +312,8 @@ function renderGraph(svgEl, nodes, positions, hl = {}) {
     </g>`;
   }
 
-  svgEl.innerHTML = mk;
+  svgEl.innerHTML = `<g class="content-g">${mk}</g>`;
+  return { w, h };
 }
 
 // ── BUILD CONSTRUCTION STEPS ──────────────────────────────────
@@ -402,7 +526,8 @@ function renderConstruct(i) {
   cIndex = i;
   const step  = cSteps[i];
   const total = cSteps.length - 1;
-  renderGraph(constructSvg, step.snapshot, cPositions, step.hl);
+  const { w, h } = renderGraph(constructSvg, step.snapshot, cPositions, step.hl);
+  cViewport.autoFit(w, h);
   constructExplain.innerHTML = step.html;
   constructCounter.textContent = `Step ${i}&nbsp;/&nbsp;${total}`;
   constructProgress.style.width = `${(i / total) * 100}%`;
@@ -417,7 +542,8 @@ function renderSearch(i) {
   const step  = tSteps[i];
   const total = tSteps.length - 1;
   const query = queryWordInput.value;
-  renderGraph(traverseSvg, savedFinalNodes, cPositions, step.hl);
+  const { w: tw, h: th } = renderGraph(traverseSvg, savedFinalNodes, cPositions, step.hl);
+  tViewport.autoFit(tw, th);
   traverseExplain.innerHTML = step.html;
   traverseCounter.textContent = `Step ${i}&nbsp;/&nbsp;${total}`;
   traverseProgress.style.width = `${(i / total) * 100}%`;
