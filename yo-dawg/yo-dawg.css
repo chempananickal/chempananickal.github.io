@@ -727,4 +727,6 @@ html.theme-dark .word-track span.wt-active {
 .bottom-image {
   display: block;
   margin: 2rem auto;
+  max-width: 100%;
+  height: auto;
 }
