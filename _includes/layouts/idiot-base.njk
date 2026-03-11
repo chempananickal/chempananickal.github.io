@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% if title %}{{ title }} | {% endif %}{{ site.author }}</title>
+  <meta name="description" content="{{ description or site.description }}" />
+  <script>
+    (function () {
+      try {
+        var savedTheme = localStorage.getItem("theme");
+        var preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.dataset.theme = savedTheme || preferredTheme;
+      } catch (error) {
+        document.documentElement.dataset.theme = "light";
+      }
+    }());
+  </script>
+  <link rel="stylesheet" href="/assets/idiot/idiot.css" />
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle colour theme">🌙 Dark</button>
+
+  <header class="retro-header" role="banner">
+    <div class="header-inner">
+      <div class="blink-badge" aria-hidden="true">WELCOME</div>
+      <h1 class="main-title">
+        <span class="title-primary">{{ heroTitle or site.author }}</span>
+        {% if heroSuffix %}
+          <span class="title-secondary">{{ heroSuffix }}</span>
+        {% endif %}
+      </h1>
+      <p class="tagline">{{ tagline or site.themeTagline }}</p>
+      <p class="subtagline">Writing, experiments, and a few interactive tools.</p>
+      <nav class="idiot-nav" aria-label="Primary">
+        <a class="btn btn-nav {% if page.url == '/' %}btn-highlight{% endif %}" href="/">Home</a>
+        <a class="btn btn-nav {% if page.url == '/blog/' or page.url.indexOf('/blog/') == 0 %}btn-highlight{% endif %}" href="/blog/">Blog</a>
+        <a class="btn btn-nav" href="/#tools">Tools</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-main">
+    {{ content | safe }}
+  </main>
+
+  <footer class="retro-footer" role="contentinfo">
+    <hr class="rainbow-hr" aria-hidden="true" />
+    {% if site.footer %}
+      <p>{{ site.footer }}</p>
+    {% else %}
+      <p>{{ site.author }}</p>
+    {% endif %}
+    {% if page.url != '/' %}
+      <p><a href="/">Back to the homepage</a></p>
+    {% endif %}
+  </footer>
+
+  <script src="/assets/idiot/idiot.js"></script>
+</body>
+</html>

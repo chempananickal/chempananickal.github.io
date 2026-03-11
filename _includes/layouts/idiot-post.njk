@@ -1,0 +1,14 @@
+---
+layout: layouts/idiot-base.njk
+heroSuffix: POST!!!
+---
+<article class="content-box idiot-article">
+  <p class="idiot-kicker">Posted {{ page.date | postDate }}</p>
+  <h2 class="idiot-post-title">{{ title }}</h2>
+  {% if description %}
+    <p class="idiot-lede">{{ description }}</p>
+  {% endif %}
+  <div class="idiot-prose">
+    {{ content | safe }}
+  </div>
+</article>

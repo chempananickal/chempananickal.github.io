@@ -1,0 +1,26 @@
+---
+layout: layouts/idiot-base.njk
+title: Blog
+heroSuffix: Archive
+tagline: Posts and notes.
+description: Blog posts by R C James.
+---
+<section class="content-box">
+  <h2>All Posts</h2>
+  <div class="idiot-list">
+    {% for post in collections.blog | reverse %}
+      <article class="idiot-card">
+        <p class="idiot-kicker">{{ post.date | postDate }}</p>
+        <h3><a href="{{ post.url }}">{{ post.data.title }}</a></h3>
+        {% if post.data.description %}
+          <p>{{ post.data.description }}</p>
+        {% endif %}
+        <a class="btn btn-highlight" href="{{ post.url }}">Read Post</a>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+<section class="content-box">
+  <h2>Notes</h2>
+  <p>The homepage now carries the site overview. This page is just the post archive.</p>
+</section>

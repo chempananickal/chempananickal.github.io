@@ -1,26 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
+---
+layout: layouts/idiot-base.njk
+title: James' Silly Website
+heroTitle: James' Silly Website
+tagline: Thingamabobs, doohickeys, and whatchamacallits.
+description: A personal site for blog posts, and interactive tools, and occasional self-indulgent musings by R C James.
+---
+<section class="content-box">
+    <h2>About</h2>
+    <p>I'm a dual student and code monkey working at Sanofi. 
+    I've mostly worked in the fields of bioinformatics and chemoinformatics, and I've mostly just coded in R and Python.
+    I know my way around the RDKit, and my usual problem solving strategies involve throwing a lot of graph theory at the problem until it goes away.
+    And yes, it's worked out pretty well so far. 
+</p>
+    <p>
+    This site is for writing, project notes, and interactive tools as I build things out. 
+    The blogs will be about anything that I seem to waste my time on at the moment, so don't expect anything consistent.
+</p>
+</section>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Introduction</title>
-    <link rel="stylesheet" href="bootstrap.css">
-    <link rel="stylesheet" href="styles.css">
-</head>
+<section class="content-box">
+    <h2>Latest Posts</h2>
+    <div class="idiot-list">
+        {% for post in collections.blog | reverse %}
+            <article class="idiot-card">
+                <p class="idiot-kicker">{{ post.date | postDate }}</p>
+                <h3><a href="{{ post.url }}">{{ post.data.title }}</a></h3>
+                {% if post.data.description %}
+                    <p>{{ post.data.description }}</p>
+                {% endif %}
+            </article>
+        {% endfor %}
+    </div>
+    <p><a class="btn btn-highlight" href="/blog/">View all posts</a></p>
+</section>
 
-<body style="background-image: url('crk05.gif');">
-    <h1>Welcome to My Projects</h1>
-    <marquee>Hi, I'm R C James. Welcome to my fun hobby projects page!</marquee>
-    <p>I'm a dual student working at Sanofi. I'm a bioinformatician with experience in R and Python, and especially in
-        chemoinformatics modules like RDKit. I'd like to make a web game someday, and that's what this site will be for.
-        It'll catalogue my journey into web development (I'm completely inexperienced) and hopefully it'll serve as my
-        portfolio.</p>
-    <p>Everything here is broken right now, but cool stuff will be here eventually :)</p>
+<section class="content-box" id="tools">
+    <h2>Tools</h2>
+    <p>Here are some interactive tools I've built:</p>
     <ul>
-        <li><a href="trie-hard/trie-hard.html">Trie Hard</a> &mdash; Step-by-step Suffix Trie explainer</li>
-        <li><a href="yo-dawg/yo-dawg.html">Yo DAWG</a> &mdash; Step-by-step Suffix Automaton (DAWG) explainer</li>
+        {% for tool in tools %}
+            <li><a href="{{ tool.url }}">{{ tool.title }}</a> &mdash; {{ tool.description }}</li>
+        {% endfor %}
     </ul>
-</body>
-
-</html>
+</section>

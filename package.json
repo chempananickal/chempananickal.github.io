@@ -1,0 +1,12 @@
+{
+  "name": "chempananickal-github-io",
+  "private": true,
+  "scripts": {
+    "dev": "eleventy --serve",
+    "build": "eleventy",
+    "watch": "eleventy --watch"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "^3.1.0"
+  }
+}
