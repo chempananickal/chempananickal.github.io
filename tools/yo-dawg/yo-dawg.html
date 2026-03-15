@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YO DAWG!! - Suffix Automaton Explainer</title>
+  <link rel="stylesheet" href="../tools-shared.css" />
   <link rel="stylesheet" href="yo-dawg.css" />
   <meta name="description" content="An interactive step-by-step explainer for the Directed Acyclic Word Graph (suffix automaton) construction and traversal algorithm." />
 </head>
@@ -57,13 +58,15 @@
           <h3>&#x1F9E0; Key Concepts</h3>
           <dl>
             <dt>State</dt>
-            <dd>A node. Each state represents an equivalence class of substrings that end at the same set of positions in the original word.</dd>
+            <dd>A node representing one endpos-equivalence class. All strings in a state have lengths in a contiguous range [link.len&thinsp;+&thinsp;1&nbsp;&hellip;&nbsp;len(u)], and they all occur at exactly the same ending positions.</dd>
             <dt>Transition</dt>
-            <dd>A labelled directed edge. Following edge labelled&nbsp;<em>c</em> from state&nbsp;<em>u</em> means "I just read character&nbsp;<em>c</em>".</dd>
+            <dd>A labelled directed edge. Following edge labelled&nbsp;<em>c</em> from state&nbsp;<em>u</em> means "I just read character&nbsp;<em>c</em>, and I'm now in the class of strings that end with&nbsp;<em>c</em>".</dd>
             <dt>Suffix Link</dt>
-            <dd>A dashed edge from state&nbsp;<em>u</em> to the state representing the longest proper suffix of&nbsp;<em>u</em>'s equivalence class. Used to backtrack.</dd>
+            <dd>A dashed edge from state&nbsp;<em>u</em> to the state whose endpos is the smallest <em>superset</em> of endpos(<em>u</em>). Concretely: the state representing the longest proper suffix of&nbsp;<em>u</em>'s shortest string. Because a shorter string must occur at least as often, its endpos is always a superset.</dd>
             <dt>len(u)</dt>
-            <dd>The length of the <em>longest</em> string in state&nbsp;<em>u</em>'s equivalence class.</dd>
+            <dd>The length of the <em>longest</em> string in state&nbsp;<em>u</em>'s equivalence class. The invariant <code>len(link(u)) &lt; len(u)</code> always holds, making the suffix-link tree well-founded.</dd>
+            <dt>endpos(u)</dt>
+            <dd>The set of ending positions in the original word where the strings in state&nbsp;<em>u</em> occur. Two substrings share a state if and only if they end at exactly the same positions — this partition into endpos-equivalence classes is the key idea behind the whole structure.</dd>
           </dl>
         </div>
       </div>
@@ -126,24 +129,32 @@
 
       <details class="pseudocode-ref">
         <summary>&#x1F4CB; Show full pseudocode</summary>
-        <pre><code id="pseudoFull">sa_extend(last, c):
-    cur      = new_state()
-    cur.len  = last.len + 1
-    p        = last
+        <pre><code id="pseudoFull"># Initialise once before processing any characters:
+last = root = new_state(); root.len = 0; root.link = NULL
+
+# Call sa_extend(c) for each character c in the word, left to right.
+# 'last' is an implicit in/out variable updated at the end of each call.
+
+sa_extend(c):
+    cur       = new_state()
+    cur.len   = last.len + 1
+    p         = last
     while p != NULL and p.next[c] is undefined:
-        p.next[c] = cur        # walk up, add transitions
+        p.next[c] = cur        # walk up suffix links, adding transitions
         p = p.link
     if p == NULL:
-        cur.link = root        # no existing c-path found
+        cur.link = root        # 'c' is brand new in the word so far
     else:
         q = p.next[c]
         if p.len + 1 == q.len:
-            cur.link = q       # q is already minimal
+            cur.link = q       # q is already the minimal representative
         else:
-            clone        = copy(q)
-            clone.len    = p.len + 1
+            clone      = new_state()
+            clone.len  = p.len + 1
+            clone.link = q.link          # inherit q's suffix-link parent
+            clone.next = copy(q.next)    # inherit q's transitions
             while p != NULL and p.next[c] == q:
-                p.next[c] = clone   # redirect existing paths
+                p.next[c] = clone        # redirect short-suffix paths to clone
                 p = p.link
             q.link   = clone
             cur.link = clone
@@ -210,6 +221,35 @@
         </div>
         <button class="btn btn-nav btn-highlight" id="tNext" aria-label="Next traversal step">Next&nbsp;&#9654;</button>
       </div>
+
+      <details class="pseudocode-ref">
+        <summary>&#x1F4CB; Show LCS traversal pseudocode</summary>
+        <pre><code># Given: the completed DAWG (root, transitions, suffix links)
+# Input: query string T
+# Output: longest substring common to the base word and T
+
+lcs_query(T):
+    v = root   # current DAWG state
+    l = 0      # current match length
+    best_l = 0; best_end = -1
+
+    for i, c in enumerate(T):
+        # Backtrack until we can follow c (or reach root)
+        while v != root and v.next[c] is undefined:
+            v = v.link
+            l = v.len   # longest match this state can guarantee
+
+        if v.next[c] is defined:
+            v = v.next[c]
+            l = l + 1
+        # else: c absent from base word entirely; v=root, l stays 0
+
+        if l &gt; best_l:
+            best_l = l
+            best_end = i
+
+    return T[best_end - best_l + 1 : best_end + 1]</code></pre>
+      </details>
     </section>
 
   </main>
@@ -217,7 +257,7 @@
   <footer class="retro-footer" role="contentinfo">
     <hr class="rainbow-hr" aria-hidden="true" />
     <p>&#x1F4BB; Made with &#10084;&#65039;, "vibe coding", and beer &#x1F37A;</p>
-    <p><a href="../index.html">&#x2190; Back to the homepage!!!</a></p>
+    <p><a href="../../index.html">&#x2190; Back to the homepage!!!</a></p>
   </footer>
 
   <script src="yo-dawg.js"></script>

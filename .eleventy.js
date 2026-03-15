@@ -1,9 +1,9 @@
+const pluginRss = require("@11ty/eleventy-plugin-rss");
+
 module.exports = function (eleventyConfig) {
+  eleventyConfig.addPlugin(pluginRss);
   eleventyConfig.addPassthroughCopy("fonts");
   eleventyConfig.addPassthroughCopy("tools");
-  eleventyConfig.addPassthroughCopy("bootstrap.css");
-  eleventyConfig.addPassthroughCopy("styles.css");
-  eleventyConfig.addPassthroughCopy("crk05.gif");
   eleventyConfig.addPassthroughCopy({ "idiot/assets": "assets/idiot" });
 
   eleventyConfig.addFilter("postDate", (value) => {

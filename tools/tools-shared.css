@@ -1,0 +1,515 @@
+/* ============================================================
+   tools-shared.css — shared styles for all interactive tools
+   Each tool provides its own CSS variables and title styles
+   in its own thin CSS file loaded after this one.
+   ============================================================ */
+
+@font-face {
+  font-family: "Comic Neue";
+  src: url("../fonts/ComicNeue-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Comic Neue";
+  src: url("../fonts/ComicNeue-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* ---------- reset & base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: "Comic Neue", "Comic Sans", "Chalkboard SE", cursive;
+  background-color: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+p, dd, li, .explain-box, .field-hint, .section-intro {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.97rem;
+}
+
+a { color: var(--link-color); }
+a:visited { color: var(--link-visited); }
+a:focus-visible { outline: 3px solid var(--hot); outline-offset: 2px; }
+strong { color: var(--hot); }
+em { font-style: italic; }
+
+/* ---------- retro header ---------- */
+.retro-header {
+  background: var(--heading);
+  color: #ffff00;
+  text-align: center;
+  padding: 24px 16px 20px;
+  border-bottom: 6px double #ffff00;
+}
+.header-inner { max-width: 860px; margin: 0 auto; }
+
+.blink-badge {
+  display: inline-block;
+  background: #ff0000;
+  color: #ffff00;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  animation: blinker 1.2s step-start infinite;
+  letter-spacing: 0.1em;
+}
+@keyframes blinker { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .blink-badge { animation: none; } }
+
+.main-title {
+  margin: 0 0 6px;
+  line-height: 1.1;
+}
+
+.tagline {
+  margin: 0 0 4px;
+  font-size: clamp(1rem, 2.5vw, 1.3rem);
+  color: #ffff00;
+  font-weight: 700;
+}
+
+.subtagline {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  color: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.retro-meta {
+  font-size: 0.75rem;
+  color: #ccffcc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-family: "Courier New", monospace;
+}
+.pipe { opacity: 0.5; }
+
+.counter {
+  font-family: "Courier New", monospace;
+  background: #000;
+  color: #00ff41;
+  padding: 1px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.15em;
+}
+
+/* ---------- page layout ---------- */
+.page-main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 60px;
+}
+
+/* ---------- content boxes ---------- */
+.content-box {
+  background: var(--card);
+  border: 4px solid var(--border);
+  border-radius: 0;
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 32px;
+}
+.content-box h2 {
+  margin: 0 0 16px;
+  font-size: clamp(1.3rem, 3.5vw, 1.8rem);
+  color: var(--heading);
+  text-shadow: 2px 2px 0 var(--bg-alt);
+  border-bottom: 3px dashed var(--border);
+  padding-bottom: 8px;
+}
+
+/* ---------- intro grid ---------- */
+.intro-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+@media (max-width: 640px) { .intro-grid { grid-template-columns: 1fr; } }
+
+.concept-list {
+  background: var(--bg-alt);
+  border: 2px solid var(--border);
+  padding: 16px;
+}
+.concept-list h3 {
+  margin: 0 0 10px;
+  color: var(--heading);
+  font-size: 1rem;
+}
+dl { margin: 0; }
+dt {
+  font-weight: 700;
+  color: var(--hot);
+  font-family: Arial, Helvetica, sans-serif;
+  margin-top: 8px;
+}
+dd { margin: 2px 0 0 16px; }
+
+/* ---------- setup form ---------- */
+.setup-form { display: grid; gap: 14px; }
+.form-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.form-row label {
+  font-weight: 700;
+  color: var(--heading);
+  min-width: 160px;
+}
+.form-row input {
+  font-family: "Courier New", monospace;
+  font-size: 1rem;
+  padding: 8px 10px;
+  border: 3px solid var(--border);
+  background: var(--bg-alt);
+  color: var(--text);
+  border-radius: 0;
+  width: 160px;
+  min-width: 80px;
+}
+.form-row input:focus {
+  outline: 3px solid var(--hot);
+  outline-offset: 2px;
+}
+.field-hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-family: Arial, Helvetica, sans-serif;
+}
+.error-msg {
+  color: var(--error);
+  font-weight: 700;
+  font-size: 0.9rem;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ---------- buttons (win95 bevelled) ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  font-family: "Comic Neue", "Comic Sans", cursive;
+  font-weight: 700;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+  border-top:    3px solid;
+  border-left:   3px solid;
+  border-bottom: 3px solid;
+  border-right:  3px solid;
+  border-color: #fff #808080 #808080 #fff;
+  background: var(--btn-bg);
+  color: var(--text);
+  user-select: none;
+  -webkit-user-select: none;
+  transition: filter 0.1s;
+}
+.btn:active,
+.btn:focus-visible {
+  border-color: #808080 #fff #fff #808080;
+  outline: 3px solid var(--hot);
+  outline-offset: 2px;
+}
+.btn-go:hover { filter: brightness(1.08); }
+.btn-nav {
+  background: var(--btn-bg);
+  min-width: 90px;
+  justify-content: center;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---------- hidden ---------- */
+.hidden { display: none !important; }
+
+/* ---------- visualiser layout ---------- */
+.section-intro { margin: 0 0 16px; }
+.viz-layout {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 700px) { .viz-layout { grid-template-columns: 1fr; } }
+
+/* ---------- SVG graph ---------- */
+.viz-graph-wrap {
+  background: var(--svg-bg);
+  border: 3px solid var(--border);
+  overflow: hidden;
+  position: relative;
+  aspect-ratio: 16 / 9;
+}
+.automaton-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.fit-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  line-height: 1;
+  background: var(--btn-bg);
+  color: var(--text);
+  border: 2px solid var(--border);
+  opacity: 0.55;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0;
+  transition: opacity 0.15s;
+  z-index: 10;
+}
+.fit-btn:hover, .fit-btn:focus-visible { opacity: 1; outline: 2px solid var(--hot); }
+
+.zoom-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-family: "Courier New", monospace;
+  margin: 0 0 12px;
+  opacity: 0.8;
+}
+
+/* SVG node styles */
+.s-node circle {
+  fill: var(--node-fill);
+  stroke: var(--node-stroke);
+  stroke-width: 2;
+}
+.s-node text {
+  fill: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+.s-node.new circle  { stroke: var(--new-color); stroke-width: 3.5; }
+.s-node.mod circle  { stroke: var(--mod-color); stroke-width: 3.5; }
+.s-node.cur circle  { stroke: var(--hot); stroke-width: 3.5; fill: var(--accent-bg); }
+
+/* SVG edge styles */
+.s-edge line, .s-edge path {
+  stroke: var(--edge-color);
+  stroke-width: 2;
+  fill: none;
+}
+.s-edge text {
+  fill: var(--edge-color);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+}
+.s-edge.new line, .s-edge.new path               { stroke: var(--new-color); stroke-width: 2.5; }
+.s-edge.mod line, .s-edge.mod path               { stroke: var(--mod-color); stroke-width: 2.5; }
+.s-edge.active-trav line, .s-edge.active-trav path { stroke: var(--hot); stroke-width: 3; }
+.s-edge.new text         { fill: var(--new-color); }
+.s-edge.mod text         { fill: var(--mod-color); }
+.s-edge.active-trav text { fill: var(--hot); }
+
+/* ---------- explanation panel ---------- */
+.viz-explain {
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+@media (max-width: 700px) { .viz-explain { width: 100%; } }
+
+.step-counter {
+  font-family: "Courier New", monospace;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: right;
+}
+.explain-box {
+  background: var(--bg-alt);
+  border: 3px solid var(--border);
+  padding: 12px;
+  min-height: 120px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.explain-box p:first-child { margin-top: 0; }
+.explain-box p:last-child  { margin-bottom: 0; }
+
+/* ---------- legend ---------- */
+.legend-new {
+  color: var(--new-color);
+  font-weight: 700;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.legend-mod {
+  color: var(--mod-color);
+  font-weight: 700;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ---------- nav bar ---------- */
+.nav-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+.progress-wrap {
+  flex: 1;
+  height: 14px;
+  background: var(--progress-bg);
+  border: 2px solid var(--border);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--progress-fill);
+  transition: width 0.25s ease;
+}
+
+/* ---------- word track ---------- */
+.word-track {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.word-track span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--border);
+  font-family: "Courier New", monospace;
+  font-weight: 700;
+  font-size: 1rem;
+  background: var(--bg-alt);
+}
+
+/* ---------- LCS display ---------- */
+.lcs-display {
+  background: var(--accent-bg);
+  border: 2px solid var(--border);
+  padding: 8px 12px;
+  font-family: "Courier New", monospace;
+  font-size: 0.9rem;
+}
+.lcs-display strong { letter-spacing: 0.12em; }
+
+/* ---------- pseudocode ---------- */
+.pseudocode-ref {
+  margin-top: 20px;
+  border: 3px solid var(--border);
+  background: var(--card);
+}
+.pseudocode-ref summary {
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--bg-alt);
+  color: var(--heading);
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pseudocode-ref summary::-webkit-details-marker { display: none; }
+.pseudocode-ref summary::before {
+  content: "▶";
+  font-size: 0.7em;
+  transition: transform 0.2s;
+}
+details[open] summary::before { transform: rotate(90deg); }
+.pseudocode-ref pre {
+  margin: 0;
+  padding: 16px;
+  background: var(--code-bg);
+  color: var(--code-text);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ---------- rainbow HR ---------- */
+.rainbow-hr {
+  border: none;
+  height: 5px;
+  background: linear-gradient(90deg, red, orange, yellow, green, cyan, blue, violet);
+  margin: 0 0 16px;
+}
+
+/* ---------- footer ---------- */
+.retro-footer {
+  text-align: center;
+  padding: 12px 16px 24px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.retro-footer p { margin: 4px 0; }
+
+/* ---------- scrollbar (cosmetic) ---------- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg-alt); }
+::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* ---------- theme toggle ---------- */
+.theme-toggle {
+  position: fixed;
+  top: 10px;
+  right: 12px;
+  z-index: 9999;
+  background: var(--btn-bg);
+  color: var(--text);
+  padding: 6px 12px;
+  font-family: "Comic Neue", "Comic Sans", cursive;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 36px;
+  min-width: 44px;
+  border-top:    2px solid #fff;
+  border-left:   2px solid #fff;
+  border-bottom: 2px solid #808080;
+  border-right:  2px solid #808080;
+}
+.theme-toggle:focus-visible {
+  outline: 3px solid var(--hot);
+  outline-offset: 2px;
+}

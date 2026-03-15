@@ -113,17 +113,24 @@ A step-by-step animated explainer for the Directed Acyclic Word Graph (suffix au
 ## Repo Structure
 
 ```text
-index.html          — homepage
-bootstrap.css       — base styles for the homepage
-styles.css          — homepage custom styles
+index.html          — homepage (Eleventy/Nunjucks)
+feed.njk            — Atom RSS feed (builds to /feed.xml)
+_data/
+    site.js         — global site config (title, author, URL)
+    tools.js        — tool list data
+_includes/
+    layouts/
+        idiot-base.njk  — base HTML layout
+        idiot-post.njk  — blog post layout
 idiot/
     assets/
-        idiot.css
-        idiot.js
+        idiot.css   — theme styles
+        idiot.js    — theme scripts (theme toggle, etc.)
 blog/
-    index.njk
+    index.njk       — blog archive page
     posts/
-        welcome-to-idiot.md
+        posts.11tydata.js  — directory-level frontmatter defaults
+        *.md               — blog posts
 tools/
     yo-dawg/
         yo-dawg.html
@@ -133,4 +140,5 @@ tools/
         trie-hard.html
         trie-hard.css
         trie-hard.js
+fonts/              — Comic Neue font files
 ```

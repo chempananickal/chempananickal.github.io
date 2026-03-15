@@ -461,9 +461,9 @@ function buildConstructSteps(word) {
     snapshot: cloneArr(states),
     last: 0,
     hl: { newStates: [0] },
-    html: `<p>We start with a single <strong>root (state&nbsp;0)</strong>. Every suffix automaton
-           begins here. Its <code>len = 0</code> — it represents the empty string.
-           Its suffix link is &minus;1 (none), since there&rsquo;s nothing shorter to fall back to.</p>`,
+    html: `<p><strong>Root (state&nbsp;0)</strong> — the starting point.
+           <code>len = 0</code> (empty string, occurs everywhere).
+           Suffix link: none.</p>`,
   });
 
   for (const ch of word) {
@@ -476,12 +476,10 @@ function buildConstructSteps(word) {
       snapshot: cloneArr(states),
       last,
       hl: { newStates: [cur] },
-      html: `<p>Processing character <strong>&lsquo;${ch}&rsquo;</strong> (building prefix
-             &ldquo;${wordSoFar}&rdquo;).</p>
-             <p>Create <strong>state&nbsp;${cur}</strong> with
-             <code>len&nbsp;=&nbsp;${states[cur].len}</code>
-             &nbsp;(= last.len + 1).
-             This will represent all new suffixes ending here.</p>`,
+      html: `<p>Character <strong>&lsquo;${ch}&rsquo;</strong> → prefix &ldquo;${wordSoFar}&rdquo;.</p>
+             <p>Create <strong>state&nbsp;${cur}</strong>,
+             <code>len&nbsp;=&nbsp;${states[cur].len}</code>.
+             Endpos starts as {${wordSoFar.length - 1}}; transitions added below will determine which strings reach it.</p>`,
     });
 
     // Walk up suffix links adding transitions
@@ -493,10 +491,9 @@ function buildConstructSteps(word) {
         snapshot: cloneArr(states),
         last,
         hl: { modStates: [fp, cur], newEdges: [{ from: fp, to: cur, ch }] },
-        html: `<p>State&nbsp;${fp} has no &lsquo;${ch}&rsquo; transition.
-               Add edge <strong>${fp}&nbsp;&rarr;<sup>${ch}</sup>&nbsp;${cur}</strong>.</p>
-               <p>Follow suffix link from&nbsp;${fp}
-               &rarr;&nbsp;${states[fp].link === -1 ? 'null (end of suffix chain)' : 'state&nbsp;' + states[fp].link}.</p>`,
+        html: `<p>State&nbsp;${fp} has no &lsquo;${ch}&rsquo; transition yet.
+               Add <strong>${fp}&nbsp;&rarr;<sup>${ch}</sup>&nbsp;${cur}</strong>.
+               Follow suffix link: ${fp}&nbsp;&rarr;&nbsp;${states[fp].link === -1 ? 'null' : 'state&nbsp;' + states[fp].link}.</p>`,
       });
       p = states[fp].link;
     }
@@ -508,9 +505,8 @@ function buildConstructSteps(word) {
         snapshot: cloneArr(states),
         last,
         hl: { modStates: [cur, 0], newEdges: [{ from: cur, to: 0, type: 'link' }] },
-        html: `<p>Reached the end of the suffix chain (null) without finding an existing
-               &lsquo;${ch}&rsquo; &mdash; every suffix of the current prefix is brand new.</p>
-               <p>Set <strong>suffix link of state&nbsp;${cur} &rarr; root (state&nbsp;0)</strong>.</p>`,
+        html: `<p>Reached null — &lsquo;${ch}&rsquo; is entirely new in this word.</p>
+               <p>Suffix link: state&nbsp;${cur}&nbsp;&rarr;&nbsp;root (state&nbsp;0).</p>`,
       });
     } else {
       const q = states[p].next[ch];
@@ -520,10 +516,10 @@ function buildConstructSteps(word) {
           snapshot: cloneArr(states),
           last,
           hl: { modStates: [cur, q], newEdges: [{ from: cur, to: q, type: 'link' }] },
-          html: `<p>Stopped at state&nbsp;${p} which already has &lsquo;${ch}&rsquo;&nbsp;&rarr;&nbsp;state&nbsp;${q}.</p>
-                 <p>Check: <code>len(${p}) + 1 = ${states[p].len + 1} = len(${q}) = ${states[q].len}</code>. ✓
-                 State&nbsp;${q} is already the correct minimal representative.</p>
-                 <p>Set <strong>suffix link of state&nbsp;${cur} &rarr; state&nbsp;${q}</strong>.</p>`,
+          html: `<p>Stopped at state&nbsp;${p} → state&nbsp;${q} via &lsquo;${ch}&rsquo;.
+                 <code>len(${p})+1 = ${states[p].len + 1} = len(${q})</code>. ✓
+                 State&nbsp;${q} is already the correct minimial representative — no clone needed.</p>
+                 <p>Suffix link: state&nbsp;${cur}&nbsp;&rarr;&nbsp;state&nbsp;${q}.</p>`,
         });
       } else {
         // Clone
@@ -538,11 +534,13 @@ function buildConstructSteps(word) {
           snapshot: cloneArr(states),
           last,
           hl: { newStates: [clone], modStates: [q] },
-          html: `<p>Stopped at state&nbsp;${p} with &lsquo;${ch}&rsquo;&nbsp;&rarr;&nbsp;state&nbsp;${q}, but
+          html: `<p>Stopped at state&nbsp;${p} → state&nbsp;${q} via &lsquo;${ch}&rsquo;, but
                  <code>len(${p})+1 = ${states[p].len + 1} &ne; len(${q}) = ${states[q].len}</code>.</p>
-                 <p>State&nbsp;${q} is too &ldquo;long&rdquo;. We must <strong>clone</strong> it:
-                 new <strong>state&nbsp;${clone}</strong> gets <code>len&nbsp;=&nbsp;${states[clone].len}</code>
-                 and inherits all of ${q}&rsquo;s transitions and suffix link.</p>`,
+                 <p>State&nbsp;${q} conflates strings of lengths ${states[p].len + 1}&ndash;${states[q].len};
+                 adding the new position would wrongly merge their endpos sets.
+                 <strong>Clone</strong> it: new <strong>state&nbsp;${clone}</strong>
+                 (<code>len&nbsp;=&nbsp;${states[clone].len}</code>) takes ${q}&rsquo;s
+                 transitions and suffix link, representing only the shorter strings.</p>`,
         });
 
         // Redirect transitions
@@ -554,10 +552,11 @@ function buildConstructSteps(word) {
             snapshot: cloneArr(states),
             last,
             hl: { modStates: [fpp, clone], modEdges: [{ from: fpp, to: clone, ch }] },
-            html: `<p>State&nbsp;${fpp} had &lsquo;${ch}&rsquo;&nbsp;&rarr;&nbsp;state&nbsp;${q}.
-                   <strong>Redirect</strong> to the clone (state&nbsp;${clone}), so paths
-                   to shorter suffixes use the shorter representative.</p>
-                   <p>Continue up suffix links from state&nbsp;${fpp}&hellip;</p>`,
+            html: `<p>State&nbsp;${fpp} → state&nbsp;${q} via &lsquo;${ch}&rsquo;.
+                   Strings through ${fpp} have len &le;&nbsp;${states[fpp].len}, so this edge
+                   belongs to the clone (len&nbsp;${states[clone].len}).
+                   <strong>Redirect</strong> ${fpp}&nbsp;&rarr;<sup>${ch}</sup>&nbsp;${clone}.
+                   Continue up suffix links&hellip;</p>`,
           });
           pp = states[fpp].link;
         }
@@ -569,11 +568,12 @@ function buildConstructSteps(word) {
           last,
           hl: { modStates: [q, cur, clone],
                 newEdges: [{ from: q, to: clone, type: 'link' }, { from: cur, to: clone, type: 'link' }] },
-          html: `<p>Set suffix link of original <strong>state&nbsp;${q}</strong> and new
-                 <strong>state&nbsp;${cur}</strong> both to point to the clone
-                 <strong>(state&nbsp;${clone})</strong>.</p>
-                 <p>The clone now sits between them in the suffix-link tree,
-                 restoring the length invariant.</p>`,
+          html: `<p>Point both suffix links at the clone:</p>
+                 <ul>
+                   <li>state&nbsp;${q}.link&nbsp;&rarr;&nbsp;${clone} (clone is its new shortest-suffix parent)</li>
+                   <li>state&nbsp;${cur}.link&nbsp;&rarr;&nbsp;${clone} (shared length-${states[clone].len} suffix)</li>
+                 </ul>
+                 <p>Length invariant restored: <code>${states[clone].len} &lt; len(${q}), len(${cur})</code>.</p>`,
         });
       }
     }
@@ -583,10 +583,9 @@ function buildConstructSteps(word) {
       snapshot: cloneArr(states),
       last: cur,
       hl: { curState: cur },
-      html: `<p>&#x2705; <strong>&lsquo;${ch}&rsquo; complete.</strong>
-             State&nbsp;${cur} is the new &ldquo;last&rdquo; state — it represents
-             the full prefix <strong>&ldquo;${wordSoFar}&rdquo;</strong> just read.</p>
-             <p>The DAWG now accepts all substrings of <strong>&ldquo;${wordSoFar}&rdquo;</strong>.</p>`,
+      html: `<p>✅ <strong>&lsquo;${ch}&rsquo; done.</strong> State&nbsp;${cur} is the new last —
+             represents prefix <strong>&ldquo;${wordSoFar}&rdquo;</strong>.
+             DAWG now accepts all substrings of &ldquo;${wordSoFar}&rdquo;.</p>`,
     });
   }
 
@@ -595,11 +594,9 @@ function buildConstructSteps(word) {
     snapshot: cloneArr(states),
     last,
     hl: {},
-    html: `<p>&#x1F3C1; <strong>Construction complete!</strong></p>
-           <p>The DAWG for <strong>&ldquo;${word}&rdquo;</strong> has
-           <strong>${states.length}&nbsp;states</strong>. It accepts all
-           ${word.length * (word.length + 1) / 2} possible substrings of the word
-           using only these states. Scroll down to see the LCS traversal!</p>`,
+    html: `<p>🏁 <strong>Construction complete!</strong>
+           ${states.length}&nbsp;states for &ldquo;${word}&rdquo;
+           (${word.length * (word.length + 1) / 2} substrings). Scroll down to query it!</p>`,
     done: true,
   });
 
@@ -615,10 +612,8 @@ function buildTraverseSteps(query, states) {
     v: 0, l: 0, bestL: 0, bestEnd: -1,
     charIndex: -1,
     hl: { curState: 0 },
-    html: `<p>Begin at <strong>root (state&nbsp;0)</strong>, match length&nbsp;= 0.</p>
-           <p>We will read the query word <strong>&ldquo;${query}&rdquo;</strong>
-           one character at a time, following transitions where possible and
-           backtracking up suffix links when stuck.</p>`,
+    html: `<p>At <strong>root (state&nbsp;0)</strong>, match length&nbsp;= 0.
+           Reading <strong>&ldquo;${query}&rdquo;</strong> character by character.</p>`,
   });
 
   for (let i = 0; i < query.length; i++) {
@@ -634,11 +629,10 @@ function buildTraverseSteps(query, states) {
         v, l, bestL, bestEnd,
         charIndex: i,
         hl: { curState: v, activeEdge: { from: prevV, to: v } },
-        html: `<p>Character <strong>&lsquo;${ch}&rsquo;</strong> (index&nbsp;${i}):
-               state&nbsp;${prevV} has a direct transition
-               <strong>${prevV}&nbsp;&rarr;<sup>${ch}</sup>&nbsp;${v}</strong>. Follow it.</p>
-               <p>Match length: ${l}.</p>
-               ${newBest ? `<p>&#x2B50; New best run: <strong>&ldquo;${query.slice(bestEnd - bestL + 1, bestEnd + 1)}&rdquo;</strong> (length&nbsp;${bestL}).</p>` : ''}`,
+        html: `<p><strong>&lsquo;${ch}&rsquo;</strong> [${i}]: follow
+               <strong>${prevV}&nbsp;&rarr;<sup>${ch}</sup>&nbsp;${v}</strong>.
+               Match length: ${l}.
+               ${newBest ? `&#x2B50; New best: <strong>&ldquo;${query.slice(bestEnd - bestL + 1, bestEnd + 1)}&rdquo;</strong> (${bestL}).` : ''}</p>`,
       });
     } else {
       // Backtrack
@@ -653,11 +647,9 @@ function buildTraverseSteps(query, states) {
           v, l, bestL, bestEnd,
           charIndex: i,
           hl: { curState: 0 },
-          html: `<p>Character <strong>&lsquo;${ch}&rsquo;</strong> (index&nbsp;${i}):
-                 backtracked through ${backPath.length} suffix link(s)
-                 (${backPath.join('&nbsp;&rarr;&nbsp;')}&nbsp;&rarr;&nbsp;null).</p>
-                 <p>No match found. Reset to state&nbsp;0, match length&nbsp;= 0.
-                 This character cannot extend any common substring.</p>`,
+          html: `<p><strong>&lsquo;${ch}&rsquo;</strong> [${i}]: backtracked
+                 ${backPath.join('&nbsp;&rarr;&nbsp;')}&nbsp;&rarr;&nbsp;null.
+                 &lsquo;${ch}&rsquo; not in base word. Reset to root, match length = 0.</p>`,
         });
       } else {
         const landV = v;
@@ -669,12 +661,12 @@ function buildTraverseSteps(query, states) {
           v, l, bestL, bestEnd,
           charIndex: i,
           hl: { curState: v, activeEdge: { from: landV, to: v } },
-          html: `<p>Character <strong>&lsquo;${ch}&rsquo;</strong> (index&nbsp;${i}):
-                 backtracked ${backPath.length} step(s)
-                 (${backPath.join('&nbsp;&rarr;&nbsp;')}&nbsp;&rarr;&nbsp;state&nbsp;${landV})
-                 and found a &lsquo;${ch}&rsquo; transition to state&nbsp;${v}.</p>
-                 <p>Match length reset to <code>len(${landV})+1 = ${l}</code>.</p>
-                 ${newBest ? `<p>&#x2B50; New best: <strong>&ldquo;${query.slice(bestEnd - bestL + 1, bestEnd + 1)}&rdquo;</strong> (length&nbsp;${bestL}).</p>` : ''}`,
+          html: `<p><strong>&lsquo;${ch}&rsquo;</strong> [${i}]: backtracked
+                 ${backPath.join('&nbsp;&rarr;&nbsp;')}&nbsp;&rarr;&nbsp;state&nbsp;${landV},
+                 found &lsquo;${ch}&rsquo;&nbsp;&rarr;&nbsp;state&nbsp;${v}.
+                 Match length: <code>len(${landV})+1 = ${l}</code>
+                 (state&nbsp;${landV} guarantees ${states[landV] ? states[landV].len : '?'} matching chars, plus &lsquo;${ch}&rsquo;).
+                 ${newBest ? `&#x2B50; New best: <strong>&ldquo;${query.slice(bestEnd - bestL + 1, bestEnd + 1)}&rdquo;</strong> (${bestL}).` : ''}</p>`,
         });
       }
     }

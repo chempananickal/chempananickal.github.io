@@ -386,7 +386,18 @@ html[data-theme="dark"] .idiot-prose code {
   border: none;
   height: 5px;
   margin: 0 0 14px;
-  background: linear-gradient(90deg, #ff2f2f, #ff9f1c, #fff275, #00c853, #00bcd4, #2979ff, #ff5ad9);
+  background: linear-gradient(90deg, #ff2f2f, #ff9f1c, #fff275, #00c853, #00bcd4, #2979ff, #ff5ad9, #ff2f2f, #ff9f1c, #fff275, #00c853, #00bcd4, #2979ff, #ff5ad9);
+  background-size: 200% 100%;
+  animation: rainbow-slide 3s linear infinite;
+}
+
+@keyframes rainbow-slide {
+  from { background-position: 0% 0%; }
+  to   { background-position: 100% 0%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rainbow-hr { animation: none; }
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }

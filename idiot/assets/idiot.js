@@ -6,7 +6,7 @@
 
   function applyTheme(theme) {
     document.documentElement.dataset.theme = theme;
-    themeToggle.textContent = theme === "dark" ? "☀ Light" : "🌙 Dark";
+    themeToggle.textContent = theme === "dark" ? "☀️ Light" : "🌙 Dark";
     try {
       localStorage.setItem("theme", theme);
     } catch (error) {
