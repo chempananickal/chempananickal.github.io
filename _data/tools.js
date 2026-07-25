@@ -6,6 +6,15 @@ const toolDescriptions = {
   "yo-dawg": "Step-by-step suffix automaton explainer.",
 };
 
+const externalTools = [
+  {
+    slug: "smartslop",
+    title: "SMARTSLOP",
+    description: "Reaction SMARTS Linter and Outcome Predictor.",
+    url: "https://chempananickal.github.io/smartslop",
+  },
+];
+
 function toTitleCase(slug) {
   return slug
     .split("-")
@@ -41,5 +50,6 @@ module.exports = function () {
       };
     })
     .filter(Boolean)
+    .concat(externalTools)
     .sort((left, right) => left.title.localeCompare(right.title));
 };
