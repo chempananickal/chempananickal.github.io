@@ -3,18 +3,18 @@ layout: layouts/idiot-base.njk
 title: James' Silly Website
 heroTitle: James' Silly Website
 tagline: Thingamabobs, doohickeys, and whatchamacallits.
-description: A personal site for blog posts, and interactive tools, and occasional self-indulgent musings by R C James.
+description: A personal site for mediocre web apps and occasional self-indulgent musings by R C James.
 ---
 <section class="content-box">
     <h2>About</h2>
-    <p>Hi, I'm Rubin [unwieldy middle name] James. Most folks just call me James. I'm a dual student and code monkey working at Sanofi. 
+    <p>Hi, I'm Rubin [unwieldy middle name] James. Most folks just call me James. I have a Bachelor's degree in IT and I used to be a code monkey working at Sanofi. 
     I've mostly worked in the fields of bioinformatics and chemoinformatics, and I've mostly just coded in Python, with a little bit of R.
     I know my way around the RDKit, and my usual strategy to solve any problem is to basically throw a whole bunch of graph theory at it until it goes away. 
-    And yes, it's worked out pretty well so far... although it probably also explains why I'm single.
+    And yes, it's worked out pretty well so far, somehow.
 </p>
     <p>
-    This site is for writing, project notes, and interactive tools as I build things out. 
-    The blogs will be about anything that I seem to waste my time on at the moment, so don't expect anything consistent.
+    I made this site just to write a little blog, and to serve links to whatever little project I happen to work on.
+    The blogs will be about anything that I seem to waste my time on at the moment, so I cant guarantee it'll be consistent... or coherent.
 </p>
 </section>
 
@@ -36,10 +36,10 @@ description: A personal site for blog posts, and interactive tools, and occasion
 
 <section class="content-box" id="tools">
     <h2>Tools</h2>
-    <p>Here are some interactive tools I've built:</p>
+    <p>Here are some small tools I've built:</p>
     <ul>
         {% for tool in tools %}
-            <li><a href="{{ tool.url }}">{{ tool.title }}</a> &mdash; {{ tool.description }}</li>
+            <li><a href="{{ tool.url }}">{{ tool.title }}</a> - {{ tool.description }}</li>
         {% endfor %}
     </ul>
 </section>
